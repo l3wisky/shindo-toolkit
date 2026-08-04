@@ -57,10 +57,10 @@ return function(bootstrap)
         themes = themes,
         themeIds = themeIds,
         icons = {
-            kg = 114333260665056,
-            rcgenkai = 120297133638032,
-            misc = 104136394856650,
-            github = 80397494665808,
+            kg = "rbxassetid://114333260665056",
+            rcgenkai = "rbxassetid://120297133638032",
+            misc = "rbxassetid://104136394856650",
+            github = "rbxassetid://80397494665808",
         },
     }
     configureStorage(app)
