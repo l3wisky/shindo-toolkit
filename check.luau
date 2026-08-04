@@ -12,6 +12,25 @@ local english, russian = keys(i18n.locales.en), keys(i18n.locales.ru)
 for key in pairs(english) do assert(russian[key], "Russian locale is missing key: " .. key) end
 for key in pairs(russian) do assert(english[key], "English locale is missing key: " .. key) end
 
+local function placeholders(source)
+    local result = {}
+    for name in string.gmatch(source, "{([%w_]+)}") do
+        result[name] = true
+    end
+    return result
+end
+
+for key, englishSource in pairs(i18n.locales.en) do
+    local englishPlaceholders = placeholders(englishSource)
+    local russianPlaceholders = placeholders(i18n.locales.ru[key])
+    for name in pairs(englishPlaceholders) do
+        assert(russianPlaceholders[name], string.format("Russian locale key %s is missing placeholder {%s}", key, name))
+    end
+    for name in pairs(russianPlaceholders) do
+        assert(englishPlaceholders[name], string.format("Russian locale key %s has unexpected placeholder {%s}", key, name))
+    end
+end
+
 local sources = {}
 for key, source in pairs(i18n.locales.en) do
     local firstKey = sources[source]
