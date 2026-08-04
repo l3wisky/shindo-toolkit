@@ -59,24 +59,37 @@ return function(app)
         return band
     end
 
+    local function waitForBandValue(band, expectedValue)
+        local deadline = os.clock() + 4
+        repeat
+            if band.Value == expectedValue then
+                return true
+            end
+            task.wait(0.08)
+        until os.clock() >= deadline
+        return false
+    end
+
+    local function applyDate(band, value, successKey)
+        startEvent:FireServer("band", value)
+        if not waitForBandValue(band, value) then
+            app.error("date_change_unconfirmed")
+            return false
+        end
+        if successKey then
+            app.toast(successKey)
+        end
+        return true
+    end
+
     local function rollbackAndRejoin()
         local band = captureDate()
         if not band then
             return
         end
-        local rollbackValue = string.char(128)
-        startEvent:FireServer("band", rollbackValue)
-
-        local deadline = os.clock() + 4
-        repeat
-            if tostring(band.Value) == rollbackValue then
-                rejoin()
-                return
-            end
-            task.wait(0.08)
-        until os.clock() >= deadline
-
-        app.error("rollback_unconfirmed")
+        if applyDate(band, string.char(128)) then
+            rejoin()
+        end
     end
 
     tab:CreateSection({
@@ -125,9 +138,9 @@ return function(app)
     dateActions:CreateButton({
         name = app.ui("rollback_date"),
         callback = function()
-            if captureDate() then
-                startEvent:FireServer("band", string.char(128))
-                app.toast("rollback_sent")
+            local band = captureDate()
+            if band then
+                applyDate(band, string.char(128), "rollback_applied")
             end
         end,
     })
@@ -138,8 +151,12 @@ return function(app)
                 app.error("original_unavailable")
                 return
             end
-            startEvent:FireServer("band", app.originals.date)
-            app.toast("original_date_restored")
+            local band = bandValue()
+            if not band then
+                app.error("target_missing")
+                return
+            end
+            applyDate(band, app.originals.date, "original_date_restored")
         end,
     })
     tab:CreateButton({
