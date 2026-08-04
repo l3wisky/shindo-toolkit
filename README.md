@@ -29,7 +29,7 @@ In normal scenarios, the same result can be reproduced through the known `Load L
 
 ## RCGENKAI
 
-Allows any limited bloodline to be purchased in the RELLshop for approximately 300,000–500,000 RELL Coins without waiting for special events.
+Allows any re-skin bloodline to be purchased in the RELLshop for approximately 300,000–500,000 RELL Coins without waiting for special events.
 
 ## MISC
 
