@@ -51,7 +51,8 @@ return function(bootstrap)
     end
 
     local app = {
-        branch = bootstrap.branch,
+        development = bootstrap.development,
+        runtimeRef = bootstrap.runtimeRef,
         data = data,
         originals = session.originals,
         themes = themes,
@@ -131,7 +132,7 @@ return function(bootstrap)
                 duration = 4,
             })
         end
-        if app.branch == "dev" then
+        if app.development then
             app.window:CreateTag({
                 text = "DEV",
             })

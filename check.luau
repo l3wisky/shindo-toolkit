@@ -12,6 +12,28 @@ local english, russian = keys(i18n.locales.en), keys(i18n.locales.ru)
 for key in pairs(english) do assert(russian[key], "Russian locale is missing key: " .. key) end
 for key in pairs(russian) do assert(english[key], "English locale is missing key: " .. key) end
 
+local sources = {}
+for key, source in pairs(i18n.locales.en) do
+    local firstKey = sources[source]
+    if firstKey then
+        local firstRussian = i18n.locales.ru[firstKey]
+        local conflictingRussian = i18n.locales.ru[key]
+        assert(
+            firstRussian == conflictingRussian,
+            string.format(
+                "Rayfield translation collision for %q: %s=%q conflicts with %s=%q",
+                source,
+                firstKey,
+                firstRussian,
+                key,
+                conflictingRussian
+            )
+        )
+    else
+        sources[source] = key
+    end
+end
+
 local function unique(items, field, label)
     local seen = {}
     for _, item in ipairs(items) do

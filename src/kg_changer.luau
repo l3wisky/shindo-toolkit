@@ -24,7 +24,6 @@ return function(app)
     local selectedBloodline = bloodlineNames[1]
     local selectedKenjutsu = kenjutsuNames[1]
     local selectedPreset = nil
-    local noPresets = app.ui("no_presets")
 
     local function findPlayerValue(path)
         local value = player
@@ -56,13 +55,6 @@ return function(app)
         end
         value.Value = original
         app.toast("restored", { value = original })
-    end
-
-    local function presetOptions()
-        if #app.settings.presets == 0 then
-            return { noPresets }
-        end
-        return app.settings.presets
     end
 
     tab:CreateButton({
@@ -97,9 +89,8 @@ return function(app)
     })
     local presetDropdown = tab:CreateDropdown({
         name = app.ui("saved_presets"),
-        options = presetOptions(),
-        value = if #app.settings.presets == 0 then noPresets else nil,
-        placeholder = noPresets,
+        options = app.settings.presets,
+        placeholder = "—",
         callback = function(name)
             selectedPreset = if bloodlineIds[name] then name else nil
         end,
@@ -166,8 +157,8 @@ return function(app)
                             selectedPreset = nil
                             table.clear(app.settings.presets)
                             app.save()
-                            presetDropdown:Refresh(presetOptions())
-                            presetDropdown:Set(noPresets, true)
+                            presetDropdown:Refresh({})
+                            presetDropdown:Set(nil, true)
                             app.toast("presets_cleared")
                         end,
                     },
