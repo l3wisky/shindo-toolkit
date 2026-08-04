@@ -2,29 +2,15 @@ return function(app)
     local Players = game:GetService("Players")
     local TeleportService = game:GetService("TeleportService")
     local localPlayer = Players.LocalPlayer
+    local startEvent = localPlayer:WaitForChild("startevent")
     local repositoryUrl = "https://github.com/l3wisky/shindo-toolkit"
+    local selectedOutfitSlot = 1
 
     local tab = app.window:CreateTab({
         name = app.ui("tab_misc"),
     })
     local selectedPlayerName = localPlayer.Name
     local rejoinFailureConnection = nil
-
-    local function fireRemote(command, value)
-        local event = localPlayer:FindFirstChild("startevent")
-        if not event or not event.FireServer then
-            app.error("target_missing")
-            return false
-        end
-        local succeeded, reason = pcall(function()
-            event:FireServer(command, value)
-        end)
-        if not succeeded then
-            app.error("request_failed", { reason = reason })
-            return false
-        end
-        return true
-    end
 
     local function disconnectRejoinFailure()
         if rejoinFailureConnection and rejoinFailureConnection.Connected then
@@ -40,7 +26,7 @@ return function(app)
                 return
             end
             disconnectRejoinFailure()
-            app.error("request_failed", { reason = message })
+            app.error("teleport_failed", { reason = message })
         end))
 
         local succeeded, reason = pcall(function()
@@ -48,7 +34,7 @@ return function(app)
         end)
         if not succeeded then
             disconnectRejoinFailure()
-            app.error("request_failed", { reason = reason })
+            app.error("teleport_failed", { reason = reason })
             return false
         end
         app.toast("rejoining")
@@ -61,32 +47,36 @@ return function(app)
         return character and character:FindFirstChild("band")
     end
 
-    local function rollback()
+    local function captureDate()
         local band = bandValue()
         if not band then
             app.error("target_missing")
-            return false
+            return nil
         end
         if app.originals.date == nil then
             app.originals.date = band.Value
         end
+        return band
+    end
 
-        local rollbackValue = string.char(128)
-        if not fireRemote("band", rollbackValue) then
-            return false
+    local function rollbackAndRejoin()
+        local band = captureDate()
+        if not band then
+            return
         end
+        local rollbackValue = string.char(128)
+        startEvent:FireServer("band", rollbackValue)
 
         local deadline = os.clock() + 4
         repeat
             if tostring(band.Value) == rollbackValue then
-                app.toast("date_saved")
-                return true
+                rejoin()
+                return
             end
             task.wait(0.08)
         until os.clock() >= deadline
 
         app.error("rollback_unconfirmed")
-        return false
     end
 
     tab:CreateSection({
@@ -95,19 +85,16 @@ return function(app)
     tab:CreateDropdown({
         name = app.ui("outfit_slot"),
         options = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
-        value = tostring(app.settings.outfit_slot),
+        value = tostring(selectedOutfitSlot),
         forgetState = true,
         callback = function(value)
-            app.settings.outfit_slot = tonumber(value) or 1
-            if app.save() then
-                app.toast("settings_saved")
-            end
+            selectedOutfitSlot = tonumber(value) or 1
         end,
     })
     tab:CreateButton({
         name = app.ui("load_outfit"),
         callback = function()
-            fireRemote("loadoutfit", app.settings.outfit_slot)
+            startEvent:FireServer("loadoutfit", selectedOutfitSlot)
         end,
     })
 
@@ -119,8 +106,9 @@ return function(app)
     })
     teleportActions:CreateButton({
         name = app.ui("home"),
+        icon = app.icons.home,
         callback = function()
-            fireRemote("arenateleport", 5451410109)
+            startEvent:FireServer("arenateleport", 5451410109)
         end,
     })
     teleportActions:CreateButton({
@@ -136,7 +124,12 @@ return function(app)
     })
     dateActions:CreateButton({
         name = app.ui("rollback_date"),
-        callback = rollback,
+        callback = function()
+            if captureDate() then
+                startEvent:FireServer("band", string.char(128))
+                app.toast("rollback_sent")
+            end
+        end,
     })
     dateActions:CreateButton({
         name = app.ui("restore_date"),
@@ -145,9 +138,8 @@ return function(app)
                 app.error("original_unavailable")
                 return
             end
-            if fireRemote("band", app.originals.date) then
-                app.toast("restored", { value = app.originals.date })
-            end
+            startEvent:FireServer("band", app.originals.date)
+            app.toast("original_date_restored")
         end,
     })
     tab:CreateButton({
@@ -164,11 +156,7 @@ return function(app)
                     {
                         text = app.ui("confirm"),
                         style = "primary",
-                        callback = function()
-                            if rollback() then
-                                rejoin()
-                            end
-                        end,
+                        callback = rollbackAndRejoin,
                     },
                 },
             })
@@ -304,7 +292,6 @@ return function(app)
                 app.settings.language = language
                 app.save()
                 app.window:SetLocale(language)
-                app.toast("settings_saved")
             end
         end,
     })
@@ -331,7 +318,6 @@ return function(app)
                 app.settings.theme = theme
                 app.save()
                 app.window:ChangeTheme(theme)
-                app.toast("settings_saved")
             end
         end,
     })
@@ -342,15 +328,16 @@ return function(app)
         callback = function(value)
             app.settings.notifications = value
             app.save()
-            app.toast("settings_saved")
         end,
     })
     tab:CreateButton({
         name = app.ui("reset_settings"),
+        icon = app.icons.close,
         callback = function()
             app.window:Popup({
                 title = app.ui("reset_settings"),
                 content = app.ui("reset_confirm"),
+                icon = app.icons.close,
                 options = {
                     {
                         text = app.ui("cancel"),
@@ -364,10 +351,10 @@ return function(app)
                                 app.error("settings_reset_failed")
                                 return
                             end
-                            app.window:SetLocale(app.settings.language)
-                            app.window:ChangeTheme(app.settings.theme)
-                            app.toast("settings_reset")
-                            task.defer(app.rebuild)
+                            task.defer(function()
+                                app.rebuild()
+                                app.toast("settings_reset")
+                            end)
                         end,
                     },
                 },

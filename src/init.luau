@@ -35,6 +35,7 @@ return function(bootstrap)
             previousWindow:Unload()
         end
     end
+    session.app = nil
 
     local themes = {
         { id = "default", labelKey = "theme_default" },
@@ -57,6 +58,8 @@ return function(bootstrap)
         themeIds = themeIds,
         icons = {
             check = 125626312718314,
+            close = 83277910885129,
+            home = 93364949241311,
         },
     }
     configureStorage(app)
@@ -66,6 +69,9 @@ return function(bootstrap)
     end
     app.t = function(key, values)
         return i18n.translate(app.settings.language, key, values)
+    end
+    app.save = function()
+        return app.storage.save()
     end
 
     local rayfieldUrl = "https://github.com/SiriusSoftwareLtd/rayfield-gen2/releases/download/1.1.0/bundled.luau"
@@ -125,14 +131,6 @@ return function(bootstrap)
                 duration = 4,
             })
         end
-        app.save = function()
-            local saved = app.storage.save()
-            if not saved then
-                app.error("filesystem_unavailable")
-            end
-            return saved
-        end
-
         if app.branch == "dev" then
             app.window:CreateTag({
                 text = "DEV",
@@ -144,17 +142,11 @@ return function(bootstrap)
         createMisc(app)
     end
 
-    local rebuilding = false
     app.rebuild = function()
-        if rebuilding then
-            return
-        end
-        rebuilding = true
         app.disconnectTemporary()
         if app.window and app.window.unloaded == false then
             app.window:Unload()
         end
-        rebuilding = false
         build()
     end
 

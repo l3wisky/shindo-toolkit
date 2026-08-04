@@ -8,7 +8,6 @@ return function(app)
         theme = "default",
         notifications = true,
         presets = {},
-        outfit_slot = 1,
     }
 
     local knownBloodlines = {}
@@ -53,7 +52,6 @@ return function(app)
                 state.language = if decoded.language == "ru" then "ru" else "en"
                 state.theme = if app.themeIds[decoded.theme] then decoded.theme else defaults.theme
                 state.notifications = decoded.notifications ~= false
-                state.outfit_slot = math.clamp(math.floor(tonumber(decoded.outfit_slot) or 1), 1, 9)
                 state.presets = normalizePresets(decoded.presets)
             end
         end
