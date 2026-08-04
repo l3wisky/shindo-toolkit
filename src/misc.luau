@@ -1,13 +1,23 @@
 return function(app)
+    local DATE_CONFIRM_TIMEOUT = 10
+    local STARTEVENT_TIMEOUT = 15
     local Players = game:GetService("Players")
     local TeleportService = game:GetService("TeleportService")
     local localPlayer = Players.LocalPlayer
-    local startEvent = localPlayer:WaitForChild("startevent")
+    local startEvent = localPlayer:WaitForChild("startevent", STARTEVENT_TIMEOUT)
+    if not startEvent then
+        if app.window and app.window.unloaded == false then
+            app.window:Unload()
+        end
+        error("Shindo Toolkit: LocalPlayer.startevent was not found")
+    end
     local repositoryUrl = "https://github.com/l3wisky/shindo-toolkit"
     local selectedOutfitSlot = 1
+    local dateBusy = false
 
     local tab = app.window:CreateTab({
         name = app.ui("tab_misc"),
+        icon = app.icons.misc,
     })
     local selectedPlayerName = localPlayer.Name
     local rejoinFailureConnection = nil
@@ -60,7 +70,7 @@ return function(app)
     end
 
     local function waitForBandValue(band, expectedValue)
-        local deadline = os.clock() + 4
+        local deadline = os.clock() + DATE_CONFIRM_TIMEOUT
         repeat
             if band.Value == expectedValue then
                 return true
@@ -82,14 +92,22 @@ return function(app)
         return true
     end
 
-    local function rollbackAndRejoin()
-        local band = captureDate()
-        if not band then
+    local function runDateOperation(callback)
+        if dateBusy then
             return
         end
-        if applyDate(band, string.char(128)) then
-            rejoin()
-        end
+        dateBusy = true
+        callback()
+        dateBusy = false
+    end
+
+    local function rollbackAndRejoin()
+        runDateOperation(function()
+            local band = captureDate()
+            if band and applyDate(band, string.char(128)) then
+                rejoin()
+            end
+        end)
     end
 
     tab:CreateSection({
@@ -119,7 +137,6 @@ return function(app)
     })
     teleportActions:CreateButton({
         name = app.ui("home"),
-        icon = app.icons.home,
         callback = function()
             startEvent:FireServer("arenateleport", 5451410109)
         end,
@@ -138,25 +155,29 @@ return function(app)
     dateActions:CreateButton({
         name = app.ui("rollback_date"),
         callback = function()
-            local band = captureDate()
-            if band then
-                applyDate(band, string.char(128), "rollback_applied")
-            end
+            runDateOperation(function()
+                local band = captureDate()
+                if band then
+                    applyDate(band, string.char(128), "rollback_applied")
+                end
+            end)
         end,
     })
     dateActions:CreateButton({
         name = app.ui("restore_date"),
         callback = function()
-            if app.originals.date == nil then
-                app.error("original_unavailable")
-                return
-            end
-            local band = bandValue()
-            if not band then
-                app.error("target_missing")
-                return
-            end
-            applyDate(band, app.originals.date, "original_date_restored")
+            runDateOperation(function()
+                if app.originals.date == nil then
+                    app.error("original_unavailable")
+                    return
+                end
+                local band = bandValue()
+                if not band then
+                    app.error("target_missing")
+                    return
+                end
+                applyDate(band, app.originals.date, "original_date_restored")
+            end)
         end,
     })
     tab:CreateButton({
@@ -349,12 +370,10 @@ return function(app)
     })
     tab:CreateButton({
         name = app.ui("reset_settings"),
-        icon = app.icons.close,
         callback = function()
             app.window:Popup({
                 title = app.ui("reset_settings"),
                 content = app.ui("reset_confirm"),
-                icon = app.icons.close,
                 options = {
                     {
                         text = app.ui("cancel"),
@@ -380,6 +399,8 @@ return function(app)
     })
     tab:CreateButton({
         name = app.ui("github"),
+        description = app.ui("github_description"),
+        icon = app.icons.github,
         callback = function()
             if type(setclipboard) == "function" then
                 local copied = pcall(setclipboard, repositoryUrl)

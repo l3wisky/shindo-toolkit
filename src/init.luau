@@ -51,15 +51,16 @@ return function(bootstrap)
     end
 
     local app = {
-        branch = bootstrap.branch,
+        development = bootstrap.development,
         data = data,
         originals = session.originals,
         themes = themes,
         themeIds = themeIds,
         icons = {
-            check = 125626312718314,
-            close = 83277910885129,
-            home = 93364949241311,
+            kg = 84750991656135,
+            rcgenkai = 125823673784681,
+            misc = 93364949241311,
+            github = 85925158736685,
         },
     }
     configureStorage(app)
@@ -119,7 +120,6 @@ return function(bootstrap)
             if app.settings.notifications then
                 app.window:Toast({
                     title = app.t(contentKey, values),
-                    icon = app.icons.check,
                     duration = 3,
                 })
             end
@@ -131,7 +131,7 @@ return function(bootstrap)
                 duration = 4,
             })
         end
-        if app.branch == "dev" then
+        if app.development then
             app.window:CreateTag({
                 text = "DEV",
             })

@@ -1,8 +1,8 @@
 local repository = "https://raw.githubusercontent.com/l3wisky/shindo-toolkit/"
-local branch = "main"
+local runtimeRef = "v1.0.0"
 
 local function loadModule(path)
-    local url = repository .. branch .. "/" .. path
+    local url = repository .. runtimeRef .. "/" .. path
     local downloaded, source = pcall(function()
         return game:HttpGet(url)
     end)
@@ -19,5 +19,5 @@ end
 
 return loadModule("src/init.luau")({
     load = loadModule,
-    branch = branch,
+    development = false,
 })

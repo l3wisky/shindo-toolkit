@@ -2,6 +2,7 @@ return function(app)
     local player = game:GetService("Players").LocalPlayer
     local tab = app.window:CreateTab({
         name = app.ui("tab_kg"),
+        icon = app.icons.kg,
     })
 
     local bloodlineIds = {}
@@ -56,13 +57,6 @@ return function(app)
         app.toast("restored", { value = original })
     end
 
-    local function presetOptions()
-        if #app.settings.presets == 0 then
-            return { app.ui("no_presets") }
-        end
-        return app.settings.presets
-    end
-
     tab:CreateButton({
         name = app.ui("about_kg"),
         description = app.ui("kg_elements"),
@@ -95,8 +89,8 @@ return function(app)
     })
     local presetDropdown = tab:CreateDropdown({
         name = app.ui("saved_presets"),
-        options = presetOptions(),
-        placeholder = app.ui("no_presets"),
+        options = app.settings.presets,
+        placeholder = "—",
         callback = function(name)
             selectedPreset = if bloodlineIds[name] then name else nil
         end,
@@ -104,7 +98,6 @@ return function(app)
 
     tab:CreateButton({
         name = app.ui("apply_preset"),
-        icon = app.icons.check,
         callback = function()
             if not selectedPreset then
                 app.error("no_preset_selected")
@@ -164,7 +157,8 @@ return function(app)
                             selectedPreset = nil
                             table.clear(app.settings.presets)
                             app.save()
-                            presetDropdown:Refresh(presetOptions())
+                            presetDropdown:Refresh({})
+                            presetDropdown:Set(nil, true)
                             app.toast("presets_cleared")
                         end,
                     },
@@ -192,7 +186,6 @@ return function(app)
     })
     bloodlineActions:CreateButton({
         name = app.ui("apply_bloodline"),
-        icon = app.icons.check,
         callback = function()
             applyValue(
                 { "statz", "main", "kg1" },
@@ -228,7 +221,6 @@ return function(app)
     })
     kenjutsuActions:CreateButton({
         name = app.ui("apply_kenjutsu"),
-        icon = app.icons.check,
         callback = function()
             applyValue(
                 { "statz", "breathingstyle" },

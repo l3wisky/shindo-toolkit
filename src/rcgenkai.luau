@@ -1,6 +1,7 @@
 return function(app)
     local tab = app.window:CreateTab({
         name = app.ui("tab_rc"),
+        icon = app.icons.rcgenkai,
     })
 
     local bloodlineNames = {}
@@ -54,7 +55,6 @@ return function(app)
     })
     actions:CreateButton({
         name = app.ui("apply_rc"),
-        icon = app.icons.check,
         callback = function()
             local value = item1Value()
             if not value then
