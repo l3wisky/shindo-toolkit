@@ -20,5 +20,4 @@ end
 return loadModule("src/init.luau")({
     load = loadModule,
     development = false,
-    runtimeRef = runtimeRef,
 })

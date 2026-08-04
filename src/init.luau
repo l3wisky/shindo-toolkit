@@ -52,7 +52,6 @@ return function(bootstrap)
 
     local app = {
         development = bootstrap.development,
-        runtimeRef = bootstrap.runtimeRef,
         data = data,
         originals = session.originals,
         themes = themes,

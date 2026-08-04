@@ -6,6 +6,9 @@ return function(app)
     local localPlayer = Players.LocalPlayer
     local startEvent = localPlayer:WaitForChild("startevent", STARTEVENT_TIMEOUT)
     if not startEvent then
+        if app.window and app.window.unloaded == false then
+            app.window:Unload()
+        end
         error("Shindo Toolkit: LocalPlayer.startevent was not found")
     end
     local repositoryUrl = "https://github.com/l3wisky/shindo-toolkit"
