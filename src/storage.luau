@@ -12,7 +12,7 @@ return function(app)
     local function applyDefaults(state)
         table.clear(state)
         for key, value in pairs(defaults) do
-            state[key] = if type(value) == "table" then {} else value
+            state[key] = value
         end
     end
 
