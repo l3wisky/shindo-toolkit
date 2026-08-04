@@ -7,36 +7,13 @@ return function(app)
         language = "en",
         theme = "default",
         notifications = true,
-        presets = {},
     }
-
-    local knownBloodlines = {}
-    for _, bloodline in ipairs(app.data.bloodlines) do
-        knownBloodlines[bloodline.name] = true
-    end
 
     local function applyDefaults(state)
         table.clear(state)
         for key, value in pairs(defaults) do
             state[key] = if type(value) == "table" then {} else value
         end
-    end
-
-    local function normalizePresets(presets)
-        local normalized = {}
-        if type(presets) ~= "table" then
-            return normalized
-        end
-
-        local seen = {}
-        for _, name in ipairs(presets) do
-            if type(name) == "string" and knownBloodlines[name] and not seen[name] then
-                seen[name] = true
-                table.insert(normalized, name)
-            end
-        end
-        table.sort(normalized)
-        return normalized
     end
 
     local state = {}
@@ -52,7 +29,6 @@ return function(app)
                 state.language = if decoded.language == "ru" then "ru" else "en"
                 state.theme = if app.themeIds[decoded.theme] then decoded.theme else defaults.theme
                 state.notifications = decoded.notifications ~= false
-                state.presets = normalizePresets(decoded.presets)
             end
         end
     end
