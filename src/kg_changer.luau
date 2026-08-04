@@ -23,7 +23,6 @@ return function(app)
 
     local selectedBloodline = bloodlineNames[1]
     local selectedKenjutsu = kenjutsuNames[1]
-    local selectedPreset = nil
 
     local function findPlayerValue(path)
         local value = player
@@ -78,89 +77,6 @@ return function(app)
                     {
                         text = app.ui("close"),
                         style = "neutral",
-                    },
-                },
-            })
-        end,
-    })
-
-    tab:CreateSection({
-        name = app.ui("section_presets"),
-    })
-    local presetDropdown = tab:CreateDropdown({
-        name = app.ui("saved_presets"),
-        options = app.settings.presets,
-        placeholder = "—",
-        callback = function(name)
-            selectedPreset = if bloodlineIds[name] then name else nil
-        end,
-    })
-
-    tab:CreateButton({
-        name = app.ui("apply_preset"),
-        callback = function()
-            if not selectedPreset then
-                app.error("no_preset_selected")
-                return
-            end
-            applyValue(
-                { "statz", "main", "kg1" },
-                "bloodline",
-                bloodlineIds[selectedPreset],
-                selectedPreset
-            )
-        end,
-    })
-    tab:CreateButton({
-        name = app.ui("save_current"),
-        callback = function()
-            local current = findPlayerValue({ "statz", "main", "kg1" })
-            local currentName = nil
-            if current then
-                for name, id in pairs(bloodlineIds) do
-                    if id == current.Value then
-                        currentName = name
-                        break
-                    end
-                end
-            end
-            if not currentName then
-                app.error("target_missing")
-                return
-            end
-            if table.find(app.settings.presets, currentName) then
-                app.error("preset_duplicate")
-                return
-            end
-            table.insert(app.settings.presets, currentName)
-            table.sort(app.settings.presets)
-            app.save()
-            presetDropdown:Refresh(app.settings.presets)
-            app.toast("preset_saved")
-        end,
-    })
-    tab:CreateButton({
-        name = app.ui("clear_presets"),
-        callback = function()
-            app.window:Popup({
-                title = app.ui("clear_presets"),
-                content = app.ui("clear_presets_question"),
-                options = {
-                    {
-                        text = app.ui("cancel"),
-                        style = "neutral",
-                    },
-                    {
-                        text = app.ui("clear"),
-                        style = "danger",
-                        callback = function()
-                            selectedPreset = nil
-                            table.clear(app.settings.presets)
-                            app.save()
-                            presetDropdown:Refresh({})
-                            presetDropdown:Set(nil, true)
-                            app.toast("presets_cleared")
-                        end,
                     },
                 },
             })
