@@ -8,6 +8,7 @@ return function(app)
 
     local tab = app.window:CreateTab({
         name = app.ui("tab_misc"),
+        icon = app.icons.misc,
     })
     local selectedPlayerName = localPlayer.Name
     local rejoinFailureConnection = nil
@@ -119,7 +120,6 @@ return function(app)
     })
     teleportActions:CreateButton({
         name = app.ui("home"),
-        icon = app.icons.home,
         callback = function()
             startEvent:FireServer("arenateleport", 5451410109)
         end,
@@ -349,12 +349,10 @@ return function(app)
     })
     tab:CreateButton({
         name = app.ui("reset_settings"),
-        icon = app.icons.close,
         callback = function()
             app.window:Popup({
                 title = app.ui("reset_settings"),
                 content = app.ui("reset_confirm"),
-                icon = app.icons.close,
                 options = {
                     {
                         text = app.ui("cancel"),
@@ -380,6 +378,8 @@ return function(app)
     })
     tab:CreateButton({
         name = app.ui("github"),
+        description = app.ui("github_description"),
+        icon = app.icons.github,
         callback = function()
             if type(setclipboard) == "function" then
                 local copied = pcall(setclipboard, repositoryUrl)
