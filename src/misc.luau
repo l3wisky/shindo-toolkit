@@ -1,144 +1,394 @@
 return function(app)
     local Players = game:GetService("Players")
     local TeleportService = game:GetService("TeleportService")
-    local player = Players.LocalPlayer
-    local tab = app.window:CreateTab({ name = app.t("tab_misc") })
-    local selectedPlayer = player.Name
-    local currentCode = nil
+    local localPlayer = Players.LocalPlayer
+    local startEvent = localPlayer:WaitForChild("startevent")
+    local repositoryUrl = "https://github.com/l3wisky/shindo-toolkit"
+    local selectedOutfitSlot = 1
+
+    local tab = app.window:CreateTab({
+        name = app.ui("tab_misc"),
+    })
+    local selectedPlayerName = localPlayer.Name
     local rejoinFailureConnection = nil
 
-    local function remote(command, value)
-        local event = player:FindFirstChild("startevent")
-        if not event or not event.FireServer then app.notify("error", "target_missing"); return false end
-        local ok, reason = pcall(function() event:FireServer(command, value) end)
-        if not ok then app.notify("error", "request_failed", { reason = reason }); return false end
-        return true
+    local function disconnectRejoinFailure()
+        if rejoinFailureConnection and rejoinFailureConnection.Connected then
+            rejoinFailureConnection:Disconnect()
+        end
+        rejoinFailureConnection = nil
     end
+
     local function rejoin()
-        if rejoinFailureConnection then rejoinFailureConnection:Disconnect(); rejoinFailureConnection = nil end
+        disconnectRejoinFailure()
         rejoinFailureConnection = app.trackTemporary(TeleportService.TeleportInitFailed:Connect(function(failedPlayer, _, message)
-            if failedPlayer ~= player then return end
-            if rejoinFailureConnection then rejoinFailureConnection:Disconnect(); rejoinFailureConnection = nil end
-            app.notify("error", "request_failed", { reason = message })
+            if failedPlayer ~= localPlayer then
+                return
+            end
+            disconnectRejoinFailure()
+            app.error("teleport_failed", { reason = message })
         end))
-        local ok, reason = pcall(function() TeleportService:Teleport(game.PlaceId, player) end)
-        if not ok then
-            if rejoinFailureConnection then rejoinFailureConnection:Disconnect(); rejoinFailureConnection = nil end
-            app.notify("error", "request_failed", { reason = reason })
+
+        local succeeded, reason = pcall(function()
+            TeleportService:Teleport(game.PlaceId, localPlayer)
+        end)
+        if not succeeded then
+            disconnectRejoinFailure()
+            app.error("teleport_failed", { reason = reason })
             return false
         end
-        app.notify("success", "rejoining")
+        app.toast("rejoining")
         return true
     end
+
     local function bandValue()
-        local statz = player:FindFirstChild("statz")
+        local statz = localPlayer:FindFirstChild("statz")
         local character = statz and statz:FindFirstChild("character")
         return character and character:FindFirstChild("band")
     end
-    local function rollback()
+
+    local function captureDate()
         local band = bandValue()
-        if not band then app.notify("error", "target_missing"); return false end
-        if app.originals.date == nil then app.originals.date = band.Value end
-        local invalid = string.char(128)
-        if not remote("band", invalid) then return false end
+        if not band then
+            app.error("target_missing")
+            return nil
+        end
+        if app.originals.date == nil then
+            app.originals.date = band.Value
+        end
+        return band
+    end
+
+    local function rollbackAndRejoin()
+        local band = captureDate()
+        if not band then
+            return
+        end
+        local rollbackValue = string.char(128)
+        startEvent:FireServer("band", rollbackValue)
+
         local deadline = os.clock() + 4
         repeat
-            if tostring(band.Value) == invalid then app.notify("success", "date_saved"); return true end
+            if tostring(band.Value) == rollbackValue then
+                rejoin()
+                return
+            end
             task.wait(0.08)
         until os.clock() >= deadline
-        app.notify("error", "rollback_unconfirmed")
-        return false
+
+        app.error("rollback_unconfirmed")
     end
 
-    tab:CreateSection({ name = app.t("section_outfit") })
-    local slots = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
-    tab:CreateDropdown({
-        name = app.t("outfit_slot"), options = slots, value = tostring(app.settings.outfit_slot), forgetState = true,
-        callback = function(value) app.settings.outfit_slot = tonumber(value) or 1; app.save() end,
+    tab:CreateSection({
+        name = app.ui("section_outfit"),
     })
-    tab:CreateButton({ name = app.t("load_outfit"), callback = function() remote("loadoutfit", app.settings.outfit_slot) end })
-
-    tab:CreateSection({ name = app.t("section_teleport") })
-    tab:CreateButton({ name = app.t("home"), callback = function() remote("arenateleport", 5451410109) end })
-    tab:CreateButton({ name = app.t("rejoin"), callback = rejoin })
-
-    tab:CreateSection({ name = app.t("section_date") })
-    tab:CreateButton({ name = app.t("rollback_date"), callback = rollback })
-    tab:CreateButton({ name = app.t("restore_date"), callback = function()
-        if app.originals.date == nil then app.notify("error", "original_unavailable"); return end
-        if remote("band", app.originals.date) then app.notify("success", "restored", { value = app.originals.date }) end
-    end })
-    tab:CreateButton({ name = app.t("rollback_rejoin"), callback = function() if rollback() then rejoin() end end })
-
-    tab:CreateSection({ name = app.t("section_player") })
-    local function playerNames()
-        local names = {}; for _, target in ipairs(Players:GetPlayers()) do table.insert(names, target.Name) end
-        table.sort(names); return names
-    end
-    local codeDisplay = tab:CreateInput({ name = app.t("latest_ps_label"), value = app.t("unavailable"), forgetState = true, callback = function() end })
-    local daysDisplay = tab:CreateInput({ name = app.t("game_days_label"), value = app.t("unavailable"), forgetState = true, callback = function() end })
-    local function refreshInfo()
-        local target = Players:FindFirstChild(selectedPlayer)
-        local statz = target and target:FindFirstChild("statz")
-        local ps = statz and statz:FindFirstChild("ps")
-        local code = ps and ps:FindFirstChild("mycode")
-        local days = statz and statz:FindFirstChild("gamedays")
-        local resolvedCode = code and tostring(code.Value) or ""
-        local resolvedDays = days and tostring(days.Value) or ""
-        currentCode = resolvedCode ~= "" and resolvedCode or nil
-        codeDisplay:Set(currentCode or app.t("unavailable"), true)
-        daysDisplay:Set(resolvedDays ~= "" and resolvedDays or app.t("unavailable"), true)
-    end
-    local names = playerNames()
-    local playersDropdown = tab:CreateDropdown({
-        name = app.t("player"), options = names, value = selectedPlayer, forgetState = true,
-        callback = function(name) selectedPlayer = name; refreshInfo() end,
-    })
-    tab:CreateButton({ name = app.t("refresh_players"), callback = function()
-        local refreshed = playerNames(); playersDropdown:Refresh(refreshed)
-        if not Players:FindFirstChild(selectedPlayer) then selectedPlayer = refreshed[1] end
-        playersDropdown:Set(selectedPlayer, true); refreshInfo()
-    end })
-    tab:CreateButton({ name = app.t("copy_ps"), callback = function()
-        if not currentCode then app.notify("error", "ps_unavailable"); return end
-        if not setclipboard then app.notify("error", "clipboard_unavailable"); return end
-        local ok = pcall(setclipboard, currentCode)
-        app.notify(ok and "success" or "error", ok and "copied" or "clipboard_unavailable")
-    end })
-    refreshInfo()
-
-    tab:CreateSection({ name = app.t("section_settings") })
     tab:CreateDropdown({
-        name = app.t("language"), options = { app.t("english"), app.t("russian") },
-        value = app.settings.language == "ru" and app.t("russian") or app.t("english"), forgetState = true,
-        callback = function(choice)
-            local language = choice == app.t("russian") and "ru" or "en"
-            if language ~= app.settings.language then app.settings.language = language; app.save(); app.rebuild() end
+        name = app.ui("outfit_slot"),
+        options = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
+        value = tostring(selectedOutfitSlot),
+        forgetState = true,
+        callback = function(value)
+            selectedOutfitSlot = tonumber(value) or 1
         end,
     })
-    local themeLabels, themeIdByLabel = {}, {}
-    for _, theme in ipairs(app.themes) do
-        local label = app.t(theme.labelKey)
-        table.insert(themeLabels, label); themeIdByLabel[label] = theme.id
+    tab:CreateButton({
+        name = app.ui("load_outfit"),
+        callback = function()
+            startEvent:FireServer("loadoutfit", selectedOutfitSlot)
+        end,
+    })
+
+    tab:CreateSection({
+        name = app.ui("section_teleport"),
+    })
+    local teleportActions = tab:CreateGroup({
+        direction = "row",
+    })
+    teleportActions:CreateButton({
+        name = app.ui("home"),
+        icon = app.icons.home,
+        callback = function()
+            startEvent:FireServer("arenateleport", 5451410109)
+        end,
+    })
+    teleportActions:CreateButton({
+        name = app.ui("rejoin"),
+        callback = rejoin,
+    })
+
+    tab:CreateSection({
+        name = app.ui("section_date"),
+    })
+    local dateActions = tab:CreateGroup({
+        direction = "row",
+    })
+    dateActions:CreateButton({
+        name = app.ui("rollback_date"),
+        callback = function()
+            if captureDate() then
+                startEvent:FireServer("band", string.char(128))
+                app.toast("rollback_sent")
+            end
+        end,
+    })
+    dateActions:CreateButton({
+        name = app.ui("restore_date"),
+        callback = function()
+            if app.originals.date == nil then
+                app.error("original_unavailable")
+                return
+            end
+            startEvent:FireServer("band", app.originals.date)
+            app.toast("original_date_restored")
+        end,
+    })
+    tab:CreateButton({
+        name = app.ui("rollback_rejoin"),
+        callback = function()
+            app.window:Popup({
+                title = app.ui("rollback_rejoin"),
+                content = app.ui("rollback_confirm"),
+                options = {
+                    {
+                        text = app.ui("cancel"),
+                        style = "neutral",
+                    },
+                    {
+                        text = app.ui("confirm"),
+                        style = "primary",
+                        callback = rollbackAndRejoin,
+                    },
+                },
+            })
+        end,
+    })
+
+    tab:CreateSection({
+        name = app.ui("section_player"),
+    })
+
+    local function playerNames(excludedPlayer)
+        local names = {}
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= excludedPlayer then
+                table.insert(names, player.Name)
+            end
+        end
+        table.sort(names)
+        return names
     end
-    local selectedThemeLabel
-    for _, theme in ipairs(app.themes) do if theme.id == app.settings.theme then selectedThemeLabel = app.t(theme.labelKey) end end
+
+    local playersDropdown
+    local function refreshPlayers(excludedPlayer)
+        local names = playerNames(excludedPlayer)
+        local selectedIsValid = table.find(names, selectedPlayerName) ~= nil
+        if not selectedIsValid then
+            if localPlayer ~= excludedPlayer and table.find(names, localPlayer.Name) then
+                selectedPlayerName = localPlayer.Name
+            else
+                selectedPlayerName = names[1]
+            end
+        end
+        playersDropdown:Refresh(names)
+        if selectedPlayerName then
+            playersDropdown:Set(selectedPlayerName, true)
+        end
+    end
+
+    playersDropdown = tab:CreateDropdown({
+        name = app.ui("player"),
+        options = playerNames(),
+        value = selectedPlayerName,
+        forgetState = true,
+        callback = function(name)
+            if Players:FindFirstChild(name) then
+                selectedPlayerName = name
+            end
+        end,
+    })
+
+    tab:CreateButton({
+        name = app.ui("view_player"),
+        callback = function()
+            local target = selectedPlayerName and Players:FindFirstChild(selectedPlayerName)
+            if not target then
+                app.error("player_unavailable")
+                return
+            end
+
+            local statz = target:FindFirstChild("statz")
+            local ps = statz and statz:FindFirstChild("ps")
+            local codeValue = ps and ps:FindFirstChild("mycode")
+            local daysValue = statz and statz:FindFirstChild("gamedays")
+            local code = codeValue and tostring(codeValue.Value) or ""
+            local days = daysValue and tostring(daysValue.Value) or ""
+            local resolvedCode = if code ~= "" then code else nil
+            local resolvedDays = if days ~= "" then days else app.t("unavailable")
+
+            local options = {
+                {
+                    text = app.ui("close"),
+                    style = "neutral",
+                },
+            }
+            if resolvedCode then
+                table.insert(options, {
+                    text = app.ui("copy_ps"),
+                    style = "primary",
+                    callback = function()
+                        if type(setclipboard) ~= "function" then
+                            app.error("clipboard_failed")
+                            return
+                        end
+                        local copied = pcall(setclipboard, resolvedCode)
+                        if copied then
+                            app.toast("ps_copied")
+                        else
+                            app.error("clipboard_failed")
+                        end
+                    end,
+                })
+            end
+
+            app.window:Popup({
+                title = app.t("selected_player", { name = target.Name }),
+                boxes = {
+                    {
+                        title = app.t("game_days_label"),
+                        description = resolvedDays,
+                    },
+                    {
+                        title = app.t("ps_code_label"),
+                        description = resolvedCode or app.t("unavailable"),
+                    },
+                },
+                options = options,
+            })
+        end,
+    })
+
+    app.trackTemporary(Players.PlayerAdded:Connect(function()
+        refreshPlayers(nil)
+    end))
+    app.trackTemporary(Players.PlayerRemoving:Connect(function(removingPlayer)
+        refreshPlayers(removingPlayer)
+    end))
+
+    tab:CreateSection({
+        name = app.ui("section_settings"),
+    })
+    local languageIds = {
+        [app.ui("english")] = "en",
+        [app.ui("russian")] = "ru",
+    }
     tab:CreateDropdown({
-        name = app.t("theme"), options = themeLabels, value = selectedThemeLabel, forgetState = true,
+        name = app.ui("language"),
+        options = { app.ui("english"), app.ui("russian") },
+        value = if app.settings.language == "ru" then app.ui("russian") else app.ui("english"),
+        forgetState = true,
+        callback = function(choice)
+            local language = languageIds[choice]
+            if language and language ~= app.settings.language then
+                app.settings.language = language
+                app.save()
+                app.window:SetLocale(language)
+            end
+        end,
+    })
+
+    local themeLabels = {}
+    local themeIdsByLabel = {}
+    local selectedThemeLabel = nil
+    for _, theme in ipairs(app.themes) do
+        local label = app.ui(theme.labelKey)
+        table.insert(themeLabels, label)
+        themeIdsByLabel[label] = theme.id
+        if theme.id == app.settings.theme then
+            selectedThemeLabel = label
+        end
+    end
+    tab:CreateDropdown({
+        name = app.ui("theme"),
+        options = themeLabels,
+        value = selectedThemeLabel,
+        forgetState = true,
         callback = function(label)
-            local theme = themeIdByLabel[label]
+            local theme = themeIdsByLabel[label]
             if theme and theme ~= app.settings.theme then
-                app.settings.theme = theme; app.save(); app.window:ChangeTheme(theme)
+                app.settings.theme = theme
+                app.save()
+                app.window:ChangeTheme(theme)
             end
         end,
     })
     tab:CreateToggle({
-        name = app.t("notifications"), value = app.settings.notifications, forgetState = true,
-        callback = function(value) app.settings.notifications = value; app.save() end,
+        name = app.ui("notifications"),
+        value = app.settings.notifications,
+        forgetState = true,
+        callback = function(value)
+            app.settings.notifications = value
+            app.save()
+        end,
     })
-    tab:CreateButton({ name = app.t("reset_settings"), callback = function()
-        local reset = app.storage.reset()
-        app.rebuild()
-        app.notify(reset and "success" or "error", reset and "settings_reset" or "settings_reset_failed")
-    end })
+    tab:CreateButton({
+        name = app.ui("reset_settings"),
+        icon = app.icons.close,
+        callback = function()
+            app.window:Popup({
+                title = app.ui("reset_settings"),
+                content = app.ui("reset_confirm"),
+                icon = app.icons.close,
+                options = {
+                    {
+                        text = app.ui("cancel"),
+                        style = "neutral",
+                    },
+                    {
+                        text = app.ui("reset"),
+                        style = "danger",
+                        callback = function()
+                            if not app.storage.reset() then
+                                app.error("settings_reset_failed")
+                                return
+                            end
+                            task.defer(function()
+                                app.rebuild()
+                                app.toast("settings_reset")
+                            end)
+                        end,
+                    },
+                },
+            })
+        end,
+    })
+    tab:CreateButton({
+        name = app.ui("github"),
+        callback = function()
+            if type(setclipboard) == "function" then
+                local copied = pcall(setclipboard, repositoryUrl)
+                if copied then
+                    app.toast("github_copied")
+                else
+                    app.error("clipboard_failed")
+                end
+                return
+            end
+            app.window:Popup({
+                title = app.ui("github"),
+                content = app.ui("github_fallback"),
+                boxes = {
+                    {
+                        title = app.ui("github"),
+                        description = repositoryUrl,
+                    },
+                },
+                options = {
+                    {
+                        text = app.ui("close"),
+                        style = "neutral",
+                    },
+                },
+            })
+        end,
+    })
 end

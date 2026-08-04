@@ -171,7 +171,8 @@ return {
         { id = "borumakigaidenskin", name = "Borumaki Shiki" },
         { id = "codegaiden", name = "Code Gaiden" },
         { id = "vine", name = "Vine" },
-        { id = "typhoon", name = "Typhoon" },    },
+        { id = "typhoon", name = "Typhoon" },
+    },
     kenjutsu = {
         { id = "bloodmoonbreathing", name = "Blood Moon Ken Style" },
         { id = "flamebreathing", name = "Flame Ken Style" },
@@ -183,5 +184,6 @@ return {
         { id = "sunbreathing", name = "Sun Ken Style" },
         { id = "thunderbreathing", name = "Thunder Ken Style" },
         { id = "waterbreathing", name = "Water Ken Style" },
-        { id = "windbreathing", name = "Wind Ken Style" },    },
+        { id = "windbreathing", name = "Wind Ken Style" },
+    },
 }
