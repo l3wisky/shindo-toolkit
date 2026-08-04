@@ -88,9 +88,9 @@ local locales = {
         settings_reset = "Local settings reset.",
         settings_reset_failed = "Local settings could not be reset on disk.",
         rejoining = "Rejoining...",
-        rollback_sent = "Rollback sent.",
+        rollback_applied = "Rollback applied.",
         original_date_restored = "Original date restored.",
-        rollback_unconfirmed = "The date rollback was not confirmed; rejoin was cancelled.",
+        date_change_unconfirmed = "The date change was not confirmed.",
     },
     ru = {
         tab_kg = "Смена KG",
@@ -181,9 +181,9 @@ local locales = {
         settings_reset = "Локальные настройки сброшены.",
         settings_reset_failed = "Не удалось сбросить локальные настройки на диске.",
         rejoining = "Переподключение...",
-        rollback_sent = "Откат отправлен.",
+        rollback_applied = "Откат применён.",
         original_date_restored = "Исходная дата восстановлена.",
-        rollback_unconfirmed = "Откат даты не подтверждён; переподключение отменено.",
+        date_change_unconfirmed = "Изменение даты не подтверждено.",
     },
 }
 
