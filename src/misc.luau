@@ -115,7 +115,7 @@ return function(app)
     })
     tab:CreateDropdown({
         name = app.ui("outfit_slot"),
-        options = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
+        options = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" },
         value = tostring(selectedOutfitSlot),
         forgetState = true,
         callback = function(value)
