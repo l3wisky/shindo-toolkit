@@ -2,10 +2,7 @@
 
 [Русская версия](README.ru.md)
 
-This script mainly provides basic QOL features available to most Shindo Life players and is not designed to provide an obvious advantage.
-
-Shindo Toolkit is intentionally kept small.
-The project focuses on a limited set of practical features and does not try to become a huge universal script hub.
+This script primarily provides basic quality-of-life features available to most players in Shindo Life, and is not intended to give players an advantage in PvP.
 
 ## Loader
 
@@ -41,6 +38,9 @@ Allows any re-skin bloodline to be purchased in the RELLshop for approximately 3
 
 - [ ] Protection against scripts used by players who use powerful exploits.
 - [ ] FUN features
+- [ ] In the future, considering adding all known Shindo exploits as an optional plug-in feature (Pro Rank automation and PvP functions would clearly be a significant advantage, so they will not be included)
+
+Translated with DeepL (https://dee.pl/apps)
 
 ## License
 
