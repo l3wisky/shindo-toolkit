@@ -216,7 +216,31 @@ return function(app)
         return names
     end
 
+    local function selectedPlayerData()
+        local target = selectedPlayerName and Players:FindFirstChild(selectedPlayerName)
+        if not target then
+            return nil, 0, nil
+        end
+
+        local statz = target:FindFirstChild("statz")
+        local daysValue = statz and statz:FindFirstChild("gamedays")
+        local ps = statz and statz:FindFirstChild("ps")
+        local codeValue = ps and ps:FindFirstChild("mycode")
+        local code = codeValue and tostring(codeValue.Value) or ""
+
+        return target, tonumber(daysValue and daysValue.Value) or 0, if code ~= "" then code else nil
+    end
+
     local playersDropdown
+    local gameDaysStat
+
+    local function refreshPlayerData()
+        local _, days = selectedPlayerData()
+        if gameDaysStat then
+            gameDaysStat:Set(days)
+        end
+    end
+
     local function refreshPlayers(excludedPlayer)
         local names = playerNames(excludedPlayer)
         local selectedIsValid = table.find(names, selectedPlayerName) ~= nil
@@ -231,6 +255,7 @@ return function(app)
         if selectedPlayerName then
             playersDropdown:Set(selectedPlayerName, true)
         end
+        refreshPlayerData()
     end
 
     playersDropdown = tab:CreateDropdown({
@@ -241,67 +266,40 @@ return function(app)
         callback = function(name)
             if Players:FindFirstChild(name) then
                 selectedPlayerName = name
+                refreshPlayerData()
             end
         end,
     })
 
+    local _, initialGameDays = selectedPlayerData()
+    gameDaysStat = tab:CreateStat({
+        name = app.ui("game_days_label"),
+        value = initialGameDays,
+        numberEasing = true,
+    })
+
     tab:CreateButton({
-        name = app.ui("view_player"),
+        name = app.ui("copy_ps"),
         callback = function()
-            local target = selectedPlayerName and Players:FindFirstChild(selectedPlayerName)
+            local target, _, code = selectedPlayerData()
             if not target then
                 app.error("player_unavailable")
                 return
             end
-
-            local statz = target:FindFirstChild("statz")
-            local ps = statz and statz:FindFirstChild("ps")
-            local codeValue = ps and ps:FindFirstChild("mycode")
-            local daysValue = statz and statz:FindFirstChild("gamedays")
-            local code = codeValue and tostring(codeValue.Value) or ""
-            local days = daysValue and tostring(daysValue.Value) or ""
-            local resolvedCode = if code ~= "" then code else nil
-            local resolvedDays = if days ~= "" then days else app.t("unavailable")
-
-            local options = {
-                {
-                    text = app.ui("close"),
-                    style = "neutral",
-                },
-            }
-            if resolvedCode then
-                table.insert(options, {
-                    text = app.ui("copy_ps"),
-                    style = "primary",
-                    callback = function()
-                        if type(setclipboard) ~= "function" then
-                            app.error("clipboard_failed")
-                            return
-                        end
-                        local copied = pcall(setclipboard, resolvedCode)
-                        if copied then
-                            app.toast("ps_copied")
-                        else
-                            app.error("clipboard_failed")
-                        end
-                    end,
-                })
+            if not code then
+                app.error("ps_unavailable")
+                return
             end
-
-            app.window:Popup({
-                title = app.t("selected_player", { name = target.Name }),
-                boxes = {
-                    {
-                        title = app.t("game_days_label"),
-                        description = resolvedDays,
-                    },
-                    {
-                        title = app.t("ps_code_label"),
-                        description = resolvedCode or app.t("unavailable"),
-                    },
-                },
-                options = options,
-            })
+            if type(setclipboard) ~= "function" then
+                app.error("clipboard_failed")
+                return
+            end
+            local copied = pcall(setclipboard, code)
+            if copied then
+                app.toast("ps_copied")
+            else
+                app.error("clipboard_failed")
+            end
         end,
     })
 

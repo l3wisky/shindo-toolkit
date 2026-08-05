@@ -1,3 +1,5 @@
+local VERSION = "1.0.0"
+
 return function(bootstrap)
     if not game:IsLoaded() then
         game.Loaded:Wait()
@@ -51,6 +53,7 @@ return function(bootstrap)
     end
 
     local app = {
+        version = VERSION,
         development = bootstrap.development,
         data = data,
         originals = session.originals,
@@ -110,10 +113,6 @@ return function(bootstrap)
             theme = app.settings.theme,
             locale = app.settings.language,
             translations = i18n.rayfieldTranslations(),
-            configuration = {
-                autoSave = false,
-                autoLoad = false,
-            },
         })
 
         app.toast = function(contentKey, values)
@@ -131,9 +130,14 @@ return function(bootstrap)
                 duration = 4,
             })
         end
+        app.window:CreateTag({
+            text = "v" .. app.version,
+            order = 1,
+        })
         if app.development then
             app.window:CreateTag({
                 text = "DEV",
+                order = 2,
             })
         end
 
