@@ -2,7 +2,7 @@
 
 [Русская версия](README.ru.md)
 
-This script primarily provides basic quality-of-life features available to most players in Shindo Life, and is not intended to give players an advantage in PvP.
+This script primarily provides basic quality-of-life features that are available to most players in Shindo Life, all in one place, and is not intended to give players an advantage in PvP or to allow for serious game exploitation.
 
 ## Loader
 
