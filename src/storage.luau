@@ -1,7 +1,6 @@
 return function(app)
     local HttpService = game:GetService("HttpService")
-    local folder = "ShindoToolkit"
-    local path = "ShindoToolkit/settings.v1.json"
+    local path = app.platform.storageFolder .. "/settings.v1.json"
     local defaults = {
         version = 1,
         language = "en",
@@ -19,51 +18,57 @@ return function(app)
     local state = {}
     applyDefaults(state)
 
-    if type(isfile) == "function" and type(readfile) == "function" and isfile(path) then
-        local readSucceeded, contents = pcall(readfile, path)
-        if readSucceeded then
-            local decodeSucceeded, decoded = pcall(function()
-                return HttpService:JSONDecode(contents)
-            end)
-            if decodeSucceeded and type(decoded) == "table" and decoded.version == 1 then
-                state.language = if decoded.language == "ru" then "ru" else "en"
-                state.theme = if app.themeIds[decoded.theme] then decoded.theme else defaults.theme
-                state.notifications = decoded.notifications ~= false
-            end
+    local contents = app.platform.readText(path)
+    if contents then
+        local decodedSuccessfully, decoded = pcall(function()
+            return HttpService:JSONDecode(contents)
+        end)
+        if decodedSuccessfully and type(decoded) == "table" and decoded.version == defaults.version then
+            state.language = if decoded.language == "ru" then "ru" else defaults.language
+            state.theme = if app.themeIds[decoded.theme] then decoded.theme else defaults.theme
+            state.notifications = if type(decoded.notifications) == "boolean"
+                then decoded.notifications
+                else defaults.notifications
         end
     end
 
     local storage = {
         state = state,
+        path = path,
+        persistent = app.platform.capabilities.filesystem,
+        lastError = nil,
     }
 
     function storage.save()
-        if type(writefile) ~= "function" then
+        local encodedSuccessfully, encoded = pcall(function()
+            return HttpService:JSONEncode(state)
+        end)
+        if not encodedSuccessfully then
+            storage.lastError = "settings encoding failed: " .. tostring(encoded)
             return false
         end
 
-        local succeeded = pcall(function()
-            if type(isfolder) == "function" and type(makefolder) == "function" and not isfolder(folder) then
-                makefolder(folder)
-            end
-            writefile(path, HttpService:JSONEncode(state))
-        end)
-        return succeeded
+        local saved, reason = app.platform.writeText(path, encoded)
+        storage.lastError = if saved then nil else tostring(reason)
+        return saved
     end
 
     function storage.reset()
         applyDefaults(state)
-        if type(isfile) ~= "function" or not isfile(path) then
+
+        local deleted, reason = app.platform.deleteFile(path)
+        if deleted then
+            storage.lastError = nil
             return true
         end
 
-        if type(delfile) == "function" then
-            pcall(delfile, path)
-            if not isfile(path) then
-                return true
-            end
+        -- Some executors support writing files but not deleting them. Persisting
+        -- the defaults is equivalent and keeps reset useful in that environment.
+        local saved = storage.save()
+        if not saved and storage.lastError == nil then
+            storage.lastError = tostring(reason)
         end
-        return storage.save()
+        return saved
     end
 
     app.storage = storage

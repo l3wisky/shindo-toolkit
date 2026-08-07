@@ -1,0 +1,15 @@
+{
+  "globals": [
+    "game",
+    "workspace",
+    "task",
+    "getgenv",
+    "setclipboard",
+    "isfile",
+    "readfile",
+    "writefile",
+    "isfolder",
+    "makefolder",
+    "delfile"
+  ]
+}

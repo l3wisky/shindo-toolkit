@@ -1,0 +1,14 @@
+std = "runtime"
+
+[lints]
+almost_swapped = "deny"
+divide_by_zero = "deny"
+empty_if = "deny"
+global_usage = "deny"
+if_same_then_else = "deny"
+multiple_statements = "deny"
+parenthese_conditions = "deny"
+shadowing = "deny"
+unbalanced_assignments = "deny"
+undefined_variable = "deny"
+unused_variable = "deny"

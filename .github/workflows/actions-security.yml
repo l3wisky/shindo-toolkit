@@ -1,0 +1,57 @@
+name: Actions Security
+
+on:
+  pull_request:
+    paths:
+      - .github/**
+  push:
+    branches: [dev, main]
+    paths:
+      - .github/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: actions-security-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint 1.7.12
+        env:
+          ACTIONLINT_VERSION: v1.7.12
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@"${ACTIONLINT_VERSION}"
+
+      - name: Validate workflows
+        run: "$(go env GOPATH)/bin/actionlint"
+
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Audit GitHub Actions
+        uses: zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054 # v0.6.2
+        with:
+          version: 1.29.0
+          persona: pedantic
+          min-severity: low
+          min-confidence: medium
+          advanced-security: false
+          annotations: true

@@ -1,26 +1,60 @@
 return function(app)
-    local DATE_CONFIRM_TIMEOUT = 10
-    local STARTEVENT_TIMEOUT = 15
     local Players = game:GetService("Players")
     local TeleportService = game:GetService("TeleportService")
     local localPlayer = Players.LocalPlayer
-    local startEvent = localPlayer:WaitForChild("startevent", STARTEVENT_TIMEOUT)
-    if not startEvent then
-        if app.window and app.window.unloaded == false then
-            app.window:Unload()
-        end
-        error("Shindo Toolkit: LocalPlayer.startevent was not found")
-    end
-    local repositoryUrl = "https://github.com/l3wisky/shindo-toolkit"
     local selectedOutfitSlot = 1
+    local selectedPlayerName = localPlayer.Name
     local dateBusy = false
+    local rejoinFailureConnection = nil
 
     local tab = app.window:CreateTab({
         name = app.ui("tab_misc"),
         icon = app.icons.misc,
     })
-    local selectedPlayerName = localPlayer.Name
-    local rejoinFailureConnection = nil
+
+    local function saveSettings()
+        if app.save() then
+            return true
+        end
+        app.error("settings_save_failed", {
+            reason = app.storage.lastError or "persistent storage is unavailable",
+        })
+        return false
+    end
+
+    local function copy(text, successKey)
+        local copied = app.platform.copy(text)
+        if copied then
+            app.toast(successKey)
+            return true
+        end
+        app.error("clipboard_failed")
+        return false
+    end
+
+    local function startEvent()
+        local candidate = localPlayer:FindFirstChild("startevent")
+        if candidate and candidate:IsA("RemoteEvent") then
+            return candidate
+        end
+        return nil
+    end
+
+    local function fireStartEvent(command, value)
+        local remote = startEvent()
+        if not remote then
+            app.error("remote_unavailable")
+            return false
+        end
+        local fired, reason = pcall(function()
+            remote:FireServer(command, value)
+        end)
+        if not fired then
+            app.error("remote_failed", { reason = tostring(reason) })
+            return false
+        end
+        return true
+    end
 
     local function disconnectRejoinFailure()
         if rejoinFailureConnection and rejoinFailureConnection.Connected then
@@ -31,20 +65,21 @@ return function(app)
 
     local function rejoin()
         disconnectRejoinFailure()
-        rejoinFailureConnection = app.trackTemporary(TeleportService.TeleportInitFailed:Connect(function(failedPlayer, _, message)
-            if failedPlayer ~= localPlayer then
-                return
-            end
-            disconnectRejoinFailure()
-            app.error("teleport_failed", { reason = message })
-        end))
+        rejoinFailureConnection =
+            app.trackTemporary(TeleportService.TeleportInitFailed:Connect(function(failedPlayer, _, message)
+                if failedPlayer ~= localPlayer then
+                    return
+                end
+                disconnectRejoinFailure()
+                app.error("teleport_failed", { reason = tostring(message) })
+            end))
 
         local succeeded, reason = pcall(function()
             TeleportService:Teleport(game.PlaceId, localPlayer)
         end)
         if not succeeded then
             disconnectRejoinFailure()
-            app.error("teleport_failed", { reason = reason })
+            app.error("teleport_failed", { reason = tostring(reason) })
             return false
         end
         app.toast("rejoining")
@@ -52,9 +87,18 @@ return function(app)
     end
 
     local function bandValue()
-        local statz = localPlayer:FindFirstChild("statz")
-        local character = statz and statz:FindFirstChild("character")
-        return character and character:FindFirstChild("band")
+        return app.values.find(localPlayer, { "statz", "character", "band" })
+    end
+
+    local function readValue(target)
+        local succeeded, value = pcall(function()
+            return target.Value
+        end)
+        if not succeeded then
+            app.error("value_read_failed", { reason = tostring(value) })
+            return nil, false
+        end
+        return value, true
     end
 
     local function captureDate()
@@ -64,24 +108,36 @@ return function(app)
             return nil
         end
         if app.originals.date == nil then
-            app.originals.date = band.Value
+            local original, readSuccessfully = readValue(band)
+            if not readSuccessfully then
+                return nil
+            end
+            app.originals.date = original
         end
         return band
     end
 
     local function waitForBandValue(band, expectedValue)
-        local deadline = os.clock() + DATE_CONFIRM_TIMEOUT
+        local deadline = os.clock() + app.config.timeouts.dateConfirmation
         repeat
-            if band.Value == expectedValue then
+            local readSuccessfully, current = pcall(function()
+                return band.Value
+            end)
+            if not readSuccessfully then
+                return false
+            end
+            if current == expectedValue then
                 return true
             end
-            task.wait(0.08)
+            task.wait(app.config.timeouts.datePollInterval)
         until os.clock() >= deadline
         return false
     end
 
     local function applyDate(band, value, successKey)
-        startEvent:FireServer("band", value)
+        if not fireStartEvent("band", value) then
+            return false
+        end
         if not waitForBandValue(band, value) then
             app.error("date_change_unconfirmed")
             return false
@@ -94,19 +150,33 @@ return function(app)
 
     local function runDateOperation(callback)
         if dateBusy then
-            return
+            app.error("operation_busy")
+            return false
         end
+
         dateBusy = true
-        callback()
+        local succeeded, result = xpcall(callback, function(reason)
+            return tostring(reason)
+        end)
         dateBusy = false
+
+        if not succeeded then
+            app.error("operation_failed", { reason = result })
+            return false
+        end
+        return result ~= false
     end
 
     local function rollbackAndRejoin()
         runDateOperation(function()
             local band = captureDate()
-            if band and applyDate(band, string.char(128)) then
-                rejoin()
+            if not band then
+                return false
             end
+            if not applyDate(band, app.config.game.rollbackBand) then
+                return false
+            end
+            return rejoin()
         end)
     end
 
@@ -125,7 +195,7 @@ return function(app)
     tab:CreateButton({
         name = app.ui("load_outfit"),
         callback = function()
-            startEvent:FireServer("loadoutfit", selectedOutfitSlot)
+            fireStartEvent("loadoutfit", selectedOutfitSlot)
         end,
     })
 
@@ -138,7 +208,7 @@ return function(app)
     teleportActions:CreateButton({
         name = app.ui("home"),
         callback = function()
-            startEvent:FireServer("arenateleport", 5451410109)
+            fireStartEvent("arenateleport", app.config.game.homePlaceId)
         end,
     })
     teleportActions:CreateButton({
@@ -157,9 +227,10 @@ return function(app)
         callback = function()
             runDateOperation(function()
                 local band = captureDate()
-                if band then
-                    applyDate(band, string.char(128), "rollback_applied")
+                if not band then
+                    return false
                 end
+                return applyDate(band, app.config.game.rollbackBand, "rollback_applied")
             end)
         end,
     })
@@ -169,14 +240,14 @@ return function(app)
             runDateOperation(function()
                 if app.originals.date == nil then
                     app.error("original_unavailable")
-                    return
+                    return false
                 end
                 local band = bandValue()
                 if not band then
                     app.error("target_missing")
-                    return
+                    return false
                 end
-                applyDate(band, app.originals.date, "original_date_restored")
+                return applyDate(band, app.originals.date, "original_date_restored")
             end)
         end,
     })
@@ -219,8 +290,7 @@ return function(app)
     local playersDropdown
     local function refreshPlayers(excludedPlayer)
         local names = playerNames(excludedPlayer)
-        local selectedIsValid = table.find(names, selectedPlayerName) ~= nil
-        if not selectedIsValid then
+        if table.find(names, selectedPlayerName) == nil then
             if localPlayer ~= excludedPlayer and table.find(names, localPlayer.Name) then
                 selectedPlayerName = localPlayer.Name
             else
@@ -235,7 +305,7 @@ return function(app)
 
     playersDropdown = tab:CreateDropdown({
         name = app.ui("player"),
-        options = playerNames(),
+        options = playerNames(nil),
         value = selectedPlayerName,
         forgetState = true,
         callback = function(name)
@@ -274,16 +344,7 @@ return function(app)
                     text = app.ui("copy_ps"),
                     style = "primary",
                     callback = function()
-                        if type(setclipboard) ~= "function" then
-                            app.error("clipboard_failed")
-                            return
-                        end
-                        local copied = pcall(setclipboard, resolvedCode)
-                        if copied then
-                            app.toast("ps_copied")
-                        else
-                            app.error("clipboard_failed")
-                        end
+                        copy(resolvedCode, "ps_copied")
                     end,
                 })
             end
@@ -328,7 +389,7 @@ return function(app)
             local language = languageIds[choice]
             if language and language ~= app.settings.language then
                 app.settings.language = language
-                app.save()
+                saveSettings()
                 app.window:SetLocale(language)
             end
         end,
@@ -354,7 +415,7 @@ return function(app)
             local theme = themeIdsByLabel[label]
             if theme and theme ~= app.settings.theme then
                 app.settings.theme = theme
-                app.save()
+                saveSettings()
                 app.window:ChangeTheme(theme)
             end
         end,
@@ -365,7 +426,7 @@ return function(app)
         forgetState = true,
         callback = function(value)
             app.settings.notifications = value
-            app.save()
+            saveSettings()
         end,
     })
     tab:CreateButton({
@@ -397,18 +458,71 @@ return function(app)
             })
         end,
     })
+
+    tab:CreateButton({
+        name = app.ui("diagnostics"),
+        description = app.ui("diagnostics_description"),
+        callback = function()
+            local snapshot = app.diagnostics.snapshot()
+            local function status(value)
+                return app.t(if value then "available" else "unavailable")
+            end
+
+            app.window:Popup({
+                title = app.t("diagnostics"),
+                content = app.t("diagnostics_description"),
+                boxes = {
+                    {
+                        title = app.t("diagnostics_runtime"),
+                        description = table.concat({
+                            "version: " .. snapshot.version,
+                            "channel: " .. snapshot.channel,
+                            "place: " .. snapshot.placeId,
+                            "rayfield: " .. snapshot.rayfield,
+                        }, "\n"),
+                    },
+                    {
+                        title = app.t("diagnostics_capabilities"),
+                        description = table.concat({
+                            "filesystem: " .. status(snapshot.filesystem),
+                            "clipboard: " .. status(snapshot.clipboard),
+                        }, "\n"),
+                    },
+                    {
+                        title = app.t("diagnostics_targets"),
+                        description = table.concat({
+                            "startevent: " .. status(snapshot.startEvent),
+                            "bloodline: " .. status(snapshot.bloodline),
+                            "kenjutsu: " .. status(snapshot.kenjutsu),
+                            "date: " .. status(snapshot.date),
+                            "rcgenkai: " .. status(snapshot.rcgenkai),
+                        }, "\n"),
+                    },
+                },
+                options = {
+                    {
+                        text = app.ui("close"),
+                        style = "neutral",
+                    },
+                    {
+                        text = app.ui("copy_diagnostics"),
+                        style = "primary",
+                        callback = function()
+                            copy(app.diagnostics.report(), "diagnostics_copied")
+                        end,
+                    },
+                },
+            })
+        end,
+    })
+
     tab:CreateButton({
         name = app.ui("github"),
         description = app.ui("github_description"),
         icon = app.icons.github,
         callback = function()
-            if type(setclipboard) == "function" then
-                local copied = pcall(setclipboard, repositoryUrl)
-                if copied then
-                    app.toast("github_copied")
-                else
-                    app.error("clipboard_failed")
-                end
+            if app.platform.capabilities.clipboard then
+                copy(app.config.repositoryUrl, "github_copied")
                 return
             end
             app.window:Popup({
@@ -417,7 +531,7 @@ return function(app)
                 boxes = {
                     {
                         title = app.ui("github"),
-                        description = repositoryUrl,
+                        description = app.config.repositoryUrl,
                     },
                 },
                 options = {

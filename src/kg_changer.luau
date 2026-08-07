@@ -24,38 +24,6 @@ return function(app)
     local selectedBloodline = bloodlineNames[1]
     local selectedKenjutsu = kenjutsuNames[1]
 
-    local function findPlayerValue(path)
-        local value = player
-        for _, name in ipairs(path) do
-            value = value and value:FindFirstChild(name)
-        end
-        return value
-    end
-
-    local function applyValue(path, originalKey, id, displayName)
-        local value = findPlayerValue(path)
-        if not value then
-            app.error("target_missing")
-            return
-        end
-        if app.originals[originalKey] == nil then
-            app.originals[originalKey] = value.Value
-        end
-        value.Value = id
-        app.toast("applied", { value = displayName })
-    end
-
-    local function restoreValue(path, originalKey)
-        local value = findPlayerValue(path)
-        local original = app.originals[originalKey]
-        if not value or original == nil then
-            app.error("original_unavailable")
-            return
-        end
-        value.Value = original
-        app.toast("restored", { value = original })
-    end
-
     tab:CreateButton({
         name = app.ui("about_kg"),
         description = app.ui("kg_elements"),
@@ -103,7 +71,8 @@ return function(app)
     bloodlineActions:CreateButton({
         name = app.ui("apply_bloodline"),
         callback = function()
-            applyValue(
+            app.values.apply(
+                player,
                 { "statz", "main", "kg1" },
                 "bloodline",
                 bloodlineIds[selectedBloodline],
@@ -114,7 +83,7 @@ return function(app)
     bloodlineActions:CreateButton({
         name = app.ui("restore_bloodline"),
         callback = function()
-            restoreValue({ "statz", "main", "kg1" }, "bloodline")
+            app.values.restore(player, { "statz", "main", "kg1" }, "bloodline")
         end,
     })
 
@@ -138,7 +107,8 @@ return function(app)
     kenjutsuActions:CreateButton({
         name = app.ui("apply_kenjutsu"),
         callback = function()
-            applyValue(
+            app.values.apply(
+                player,
                 { "statz", "breathingstyle" },
                 "kenjutsu",
                 kenjutsuIds[selectedKenjutsu],
@@ -149,7 +119,7 @@ return function(app)
     kenjutsuActions:CreateButton({
         name = app.ui("restore_kenjutsu"),
         callback = function()
-            restoreValue({ "statz", "breathingstyle" }, "kenjutsu")
+            app.values.restore(player, { "statz", "breathingstyle" }, "kenjutsu")
         end,
     })
 end

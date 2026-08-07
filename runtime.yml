@@ -1,0 +1,28 @@
+base: luau
+globals:
+  game:
+    any: true
+  workspace:
+    any: true
+  task:
+    any: true
+  debug:
+    any: true
+  loadstring:
+    any: true
+  getgenv:
+    any: true
+  setclipboard:
+    any: true
+  isfile:
+    any: true
+  readfile:
+    any: true
+  writefile:
+    any: true
+  isfolder:
+    any: true
+  makefolder:
+    any: true
+  delfile:
+    any: true

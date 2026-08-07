@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: https://github.com/l3wisky/shindo-toolkit/security/advisories/new
+    about: Report loader, workflow, dependency, or release-chain vulnerabilities privately.
