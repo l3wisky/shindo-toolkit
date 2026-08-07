@@ -79,8 +79,12 @@ Rayfield checksum, and checks Git whitespace errors. Build only with `scripts/bu
 The release lifecycle is intentionally narrow:
 
 1. changes enter `dev` through a reviewed, green pull request;
-2. a promotion pull request moves the tested `dev` commit to `main`;
-3. the release workflow rebuilds from `main`, creates a draft, attests and uploads the assets, then publishes it.
+2. a short-lived `release/vX.Y.Z` branch starts at the current `main` and receives only the reviewed, unreleased
+   commits from `dev`;
+3. a focused release pull request promotes that branch to `main` after both branches pass their gates;
+4. the release workflow rebuilds from `main`, creates a draft, attests and uploads the assets, then publishes it.
+
+The release branch keeps promotion diffs exact while the repository enforces linear history and squash merges.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [architecture](docs/ARCHITECTURE.md), and the
 [release checklist](docs/RELEASE_CHECKLIST.md) before changing runtime or release behavior.
