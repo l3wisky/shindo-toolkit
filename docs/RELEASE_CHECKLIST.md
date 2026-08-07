@@ -28,7 +28,8 @@
 
 - [ ] `dev` CI and Actions Security checks are green at the promotion commit.
 - [ ] `src/config.luau`, changelog, and release title use the same SemVer.
-- [ ] Promotion PR contains only the intended `dev → main` delta.
+- [ ] `release/vX.Y.Z` starts at the current `main` and contains only reviewed, unreleased `dev` commits.
+- [ ] The focused release PR contains only the intended release delta.
 - [ ] Release workflow publishes `shindo-toolkit.luau`, `SHA256SUMS`, and provenance for the main commit.
 - [ ] Stable loader resolves and executes the published asset.
 
