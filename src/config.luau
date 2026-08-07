@@ -1,7 +1,7 @@
 --!strict
 
 return {
-    version = "1.0.0",
+    version = "1.0.1",
     repositoryUrl = "https://github.com/l3wisky/shindo-toolkit",
     releaseArtifactUrl = "https://github.com/l3wisky/shindo-toolkit/releases/latest/download/shindo-toolkit.luau",
     rayfield = {

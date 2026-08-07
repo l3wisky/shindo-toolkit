@@ -17,7 +17,6 @@ return function(bootstrap)
     local createPlatform = bootstrap.load("src/platform.luau")
     local configureStorage = bootstrap.load("src/storage.luau")
     local createValueState = bootstrap.load("src/value_state.luau")
-    local createDiagnostics = bootstrap.load("src/diagnostics.luau")
     local createKgChanger = bootstrap.load("src/kg_changer.luau")
     local createRcgenkai = bootstrap.load("src/rcgenkai.luau")
     local createMisc = bootstrap.load("src/misc.luau")
@@ -88,7 +87,6 @@ return function(bootstrap)
     configureStorage(app)
     app.settings = app.storage.state
     app.values = createValueState(app)
-    app.diagnostics = createDiagnostics(app)
     app.ui = function(key)
         return i18n.translate("en", key)
     end
@@ -97,6 +95,17 @@ return function(bootstrap)
     end
     app.save = function()
         return app.storage.save()
+    end
+    app.missing = function(key, path)
+        local values = { path = path }
+        app.error(key, values)
+        if app.development then
+            local message = app.t(key, values)
+            task.defer(function()
+                error(message, 0)
+            end)
+        end
+        return false
     end
 
     local temporaryConnections = {}
@@ -199,11 +208,7 @@ return function(bootstrap)
         unloadWindow()
     end
 
-    buildSafely()
-
-    -- Keep an existing session alive until the replacement UI has been built.
-    -- Failed downloads, compilation, and initial UI construction therefore do
-    -- not turn a harmless reload into a destructive one.
+    session.app = nil
     if previousApp then
         local destroyed = false
         if type(previousApp.destroy) == "function" then
@@ -221,6 +226,8 @@ return function(bootstrap)
             end
         end
     end
+
+    buildSafely()
     session.app = app
     return app
 end

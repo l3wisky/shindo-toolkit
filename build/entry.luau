@@ -1,7 +1,6 @@
 local modules = {
     ["src/config.luau"] = require("../src/config"),
     ["src/data.luau"] = require("../src/data"),
-    ["src/diagnostics.luau"] = require("../src/diagnostics"),
     ["src/i18n.luau"] = require("../src/i18n"),
     ["src/kg_changer.luau"] = require("../src/kg_changer"),
     ["src/misc.luau"] = require("../src/misc"),
