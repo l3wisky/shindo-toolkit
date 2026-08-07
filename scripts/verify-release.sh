@@ -17,17 +17,23 @@ grep -Fq "$rayfield_url" NOTICE
 grep -Fq "SHA-256: ${rayfield_sha}" NOTICE
 grep -Fq "Shindo Toolkit v${version}" dist/shindo-toolkit.luau
 
+module_paths="$(
+    grep -oE 'bootstrap\.load\("src/[^"]+' src/init.luau \
+        | sed 's/^bootstrap\.load("//' \
+        | LC_ALL=C sort -u
+)"
 while IFS= read -r module_path; do
     grep -Fq "[\"${module_path}\"]" build/entry.luau
-done < <(rg --only-matching 'bootstrap\.load\("src/[^"]+' src/init.luau | sed 's/^bootstrap\.load("//' | sort -u)
+done <<< "$module_paths"
 
+translation_keys="$(
+    grep -hoE 'app\.(ui|t|error|toast)\("[a-z0-9_]+' src/*.luau \
+        | sed -E 's/^app\.(ui|t|error|toast)\("//' \
+        | LC_ALL=C sort -u
+)"
 while IFS= read -r translation_key; do
     grep -Eq "^[[:space:]]+${translation_key} =" src/i18n.luau
-done < <(
-    rg --no-filename --only-matching 'app\.(ui|t|error|toast)\("[a-z0-9_]+' src \
-        | sed -E 's/^app\.(ui|t|error|toast)\("//' \
-        | sort -u
-)
+done <<< "$translation_keys"
 (
     cd dist
     sha256sum --check --strict SHA256SUMS
