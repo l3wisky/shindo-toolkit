@@ -58,10 +58,25 @@ jobs:
         run: |
           set -euo pipefail
 
+          resolve_tag_commit() {
+              local tag_json="$1"
+              local object_type
+              local object_sha
+              object_type="$(jq -r '.object.type' <<< "$tag_json")"
+              object_sha="$(jq -r '.object.sha' <<< "$tag_json")"
+              if [[ "$object_type" == "commit" ]]; then
+                  printf '%s\n' "$object_sha"
+                  return
+              fi
+
+              git fetch --force origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+              git rev-list -n 1 "$RELEASE_TAG"
+          }
+
           release_json="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft 2>/dev/null || true)"
           if [[ -n "$release_json" && "$(jq -r '.isDraft' <<< "$release_json")" == "false" ]]; then
-              git fetch --force origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
-              tag_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
+              tag_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}")"
+              tag_commit="$(resolve_tag_commit "$tag_json")"
               if [[ "$tag_commit" != "$GITHUB_SHA" ]]; then
                   printf 'Version %s is already published from %s; bump src/config.luau before releasing %s.\n' \
                       "$RELEASE_VERSION" "$tag_commit" "$GITHUB_SHA" >&2
@@ -72,30 +87,30 @@ jobs:
               exit 0
           fi
 
-          if [[ -z "$release_json" ]]; then
-              if git rev-parse --verify --quiet "refs/tags/${RELEASE_TAG}^{commit}" > /dev/null; then
-                  gh release create "$RELEASE_TAG" \
-                      --repo "$GITHUB_REPOSITORY" \
-                      --draft \
-                      --verify-tag \
-                      --generate-notes \
-                      --title "Shindo Toolkit ${RELEASE_VERSION}"
-              else
-                  gh release create "$RELEASE_TAG" \
-                      --repo "$GITHUB_REPOSITORY" \
-                      --draft \
-                      --target "$GITHUB_SHA" \
-                      --generate-notes \
-                      --title "Shindo Toolkit ${RELEASE_VERSION}"
-              fi
+          tag_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" 2>/dev/null || true)"
+          if [[ -z "$tag_json" ]]; then
+              tag_json="$(gh api \
+                  --method POST \
+                  "repos/${GITHUB_REPOSITORY}/git/refs" \
+                  -f ref="refs/tags/${RELEASE_TAG}" \
+                  -f sha="$GITHUB_SHA")"
           fi
 
-          git fetch --force origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
-          tag_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
+          tag_commit="$(resolve_tag_commit "$tag_json")"
           if [[ "$tag_commit" != "$GITHUB_SHA" ]]; then
               printf 'Tag %s points to %s, not %s.\n' "$RELEASE_TAG" "$tag_commit" "$GITHUB_SHA" >&2
               exit 1
           fi
+
+          if [[ -z "$release_json" ]]; then
+              gh release create "$RELEASE_TAG" \
+                  --repo "$GITHUB_REPOSITORY" \
+                  --draft \
+                  --verify-tag \
+                  --generate-notes \
+                  --title "Shindo Toolkit ${RELEASE_VERSION}"
+          fi
+
           printf 'publish=true\n' >> "$GITHUB_OUTPUT"
 
       - name: Attest release bundle
