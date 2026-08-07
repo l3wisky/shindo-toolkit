@@ -62,10 +62,12 @@ problems and never include private-server codes or account secrets.
 
 ## Development
 
-[Rokit](https://github.com/rojo-rbx/rokit) installs the exact tools declared in `rokit.toml`:
+[Rokit](https://github.com/rojo-rbx/rokit) installs StyLua, Selene, and darklua. The setup script also downloads
+the official Luau 0.733 archive and verifies its platform-specific SHA-256 so that all three CLI programs are
+available:
 
 ```bash
-rokit install
+scripts/setup.sh
 scripts/ci.sh
 ```
 

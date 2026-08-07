@@ -6,7 +6,7 @@ abstractions and compatibility branches need a concrete reason; speculative exec
 ## Workflow
 
 1. Branch from `dev` and keep the change focused.
-2. Install the pinned tools with `rokit install`.
+2. Install the pinned tools with `scripts/setup.sh`.
 3. Run `scripts/ci.sh` before opening a pull request.
 4. Target the pull request at `dev`, complete the template, and include live-game evidence for runtime changes.
 5. Do not edit generated `dist/` files or publish tags/releases manually.

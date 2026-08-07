@@ -7,7 +7,7 @@ All notable project changes are documented here. This project follows [Semantic 
 ### Added
 
 - Reproducible single-file release bundle with `SHA256SUMS` and provenance attestation.
-- Rokit-managed Luau, StyLua, Selene, and darklua toolchain.
+- Checksum-verified official Luau CLI plus Rokit-managed StyLua, Selene, and darklua toolchain.
 - Unit and invariant tests for translations, data catalogs, release metadata, and value restoration.
 - Privacy-safe runtime Diagnostics view and copyable support report.
 - Capability adapter for HTTP, compilation, clipboard, and persistent settings.

@@ -61,10 +61,11 @@ executor-ов различается; при проблемах совмести
 
 ## Разработка
 
-[Rokit](https://github.com/rojo-rbx/rokit) устанавливает точные версии инструментов из `rokit.toml`:
+[Rokit](https://github.com/rojo-rbx/rokit) устанавливает StyLua, Selene и darklua. Setup-скрипт также загружает
+официальный архив Luau 0.733 и сверяет его платформенный SHA-256, чтобы были доступны все три CLI-программы:
 
 ```bash
-rokit install
+scripts/setup.sh
 scripts/ci.sh
 ```
 

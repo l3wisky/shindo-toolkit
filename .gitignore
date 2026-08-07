@@ -4,5 +4,6 @@
 Thumbs.db
 dist/
 .rokit/
+.tools/
 ShindoToolkit/
 ShindoToolkitDev/
