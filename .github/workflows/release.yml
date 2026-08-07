@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      attestations: write # Publish bundle provenance.
+      contents: write # Create the tag, release, and assets.
+      id-token: write # Request the OIDC identity used to sign provenance.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pinned toolchain
+        uses: paradoxum-games/setup-rokit@29e6ee09651a3711e3a287a1037671d7b74db6d0 # v3
+        with:
+          version: 1.2.0
+          cache: true
+
+      - name: Install pinned Luau CLI
+        run: scripts/install-luau-cli.sh
+
+      - name: Validate, test, and build
+        run: scripts/ci.sh
+
+      - name: Read release metadata
+        id: metadata
+        shell: bash
+        run: |
+          IFS=$'\t' read -r version _ < <(luau scripts/metadata.luau)
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'tag=v%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare draft release
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.metadata.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_json="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft 2>/dev/null || true)"
+          if [[ -n "$release_json" && "$(jq -r '.isDraft' <<< "$release_json")" == "false" ]]; then
+              git fetch --force origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+              tag_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
+              if [[ "$tag_commit" != "$GITHUB_SHA" ]]; then
+                  printf 'Version %s is already published from %s; bump src/config.luau before releasing %s.\n' \
+                      "$RELEASE_VERSION" "$tag_commit" "$GITHUB_SHA" >&2
+                  exit 1
+              fi
+              printf 'publish=false\n' >> "$GITHUB_OUTPUT"
+              printf 'Release %s is already published; leaving its assets unchanged.\n' "$RELEASE_TAG"
+              exit 0
+          fi
+
+          if [[ -z "$release_json" ]]; then
+              if git rev-parse --verify --quiet "refs/tags/${RELEASE_TAG}^{commit}" > /dev/null; then
+                  gh release create "$RELEASE_TAG" \
+                      --repo "$GITHUB_REPOSITORY" \
+                      --draft \
+                      --verify-tag \
+                      --generate-notes \
+                      --title "Shindo Toolkit ${RELEASE_VERSION}"
+              else
+                  gh release create "$RELEASE_TAG" \
+                      --repo "$GITHUB_REPOSITORY" \
+                      --draft \
+                      --target "$GITHUB_SHA" \
+                      --generate-notes \
+                      --title "Shindo Toolkit ${RELEASE_VERSION}"
+              fi
+          fi
+
+          git fetch --force origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          tag_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
+          if [[ "$tag_commit" != "$GITHUB_SHA" ]]; then
+              printf 'Tag %s points to %s, not %s.\n' "$RELEASE_TAG" "$tag_commit" "$GITHUB_SHA" >&2
+              exit 1
+          fi
+          printf 'publish=true\n' >> "$GITHUB_OUTPUT"
+
+      - name: Attest release bundle
+        if: steps.prepare.outputs.publish == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/shindo-toolkit.luau
+
+      - name: Upload release assets
+        if: steps.prepare.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+              dist/shindo-toolkit.luau \
+              dist/SHA256SUMS \
+              --clobber \
+              --repo "$GITHUB_REPOSITORY"
+
+      - name: Publish release
+        if: steps.prepare.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+        run: gh release edit "$RELEASE_TAG" --draft=false --latest --repo "$GITHUB_REPOSITORY"
