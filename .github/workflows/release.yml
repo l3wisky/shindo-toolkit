@@ -44,7 +44,7 @@ jobs:
         id: metadata
         shell: bash
         run: |
-          IFS=$'\t' read -r version _ < <(luau scripts/metadata.luau)
+          IFS=$'\t' read -r version _ < <(.tools/luau-0.733/luau scripts/metadata.luau)
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
           printf 'tag=v%s\n' "$version" >> "$GITHUB_OUTPUT"
 

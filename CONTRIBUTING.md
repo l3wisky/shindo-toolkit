@@ -11,6 +11,10 @@ abstractions and compatibility branches need a concrete reason; speculative exec
 4. Target the pull request at `dev`, complete the template, and include live-game evidence for runtime changes.
 5. Do not edit generated `dist/` files or publish tags/releases manually.
 
+Release managers branch `release/vX.Y.Z` from the current `main`, cherry-pick only the reviewed unreleased `dev`
+commits, and open that branch against `main`. This keeps the promotion diff auditable under the repository's
+linear-history and squash-merge rules; do not open a long-lived `dev → main` promotion pull request.
+
 ## Runtime changes
 
 - Keep executor-specific globals inside `src/platform.luau`.

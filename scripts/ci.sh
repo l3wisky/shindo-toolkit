@@ -21,9 +21,11 @@ selene loader.luau loader.dev.luau src build scripts tests
 luau-analyze loader.luau loader.dev.luau src/*.luau build/*.luau scripts/*.luau tests/*.luau
 luau tests/unit.luau
 
-while IFS= read -r file; do
-    luau-compile "$file" > /dev/null
-done < <(rg --files -g '*.luau' -g '!dist/**' | sort)
+find loader.luau loader.dev.luau src build scripts tests -type f -name '*.luau' -print0 \
+    | LC_ALL=C sort -z \
+    | while IFS= read -r -d '' file; do
+        luau-compile "$file" > /dev/null
+    done
 
 scripts/build.sh
 luau-compile dist/shindo-toolkit.luau > /dev/null
