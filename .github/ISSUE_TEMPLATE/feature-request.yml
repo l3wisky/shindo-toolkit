@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a focused QOL, reliability, or engineering improvement.
+title: "feat: "
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Real problem
+      description: Describe the concrete user scenario, not only the desired implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Smallest useful solution
+      description: Explain the minimum behavior that fully solves the scenario.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and tradeoffs
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope confirmation
+      options:
+        - label: This request does not add combat automation, farming, or PVP behavior.
+          required: true

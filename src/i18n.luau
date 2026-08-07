@@ -43,6 +43,7 @@ local locales = {
         ps_code_label = "Private Server",
         copy_ps = "Copy PS Code",
         unavailable = "Unavailable",
+        available = "Available",
         section_settings = "Settings",
         language = "Language",
         english = "English",
@@ -74,12 +75,26 @@ local locales = {
         ps_copied = "PS code copied to clipboard.",
         github_copied = "Repository URL copied to clipboard.",
         clipboard_failed = "The clipboard operation failed.",
+        remote_unavailable = "This action is unavailable because the required game remote was not found.",
+        remote_failed = "The game rejected the action: {reason}",
+        operation_busy = "A date operation is already running.",
+        operation_failed = "The operation failed: {reason}",
+        value_read_failed = "The current game value could not be read: {reason}",
+        value_write_failed = "The game value could not be changed: {reason}",
+        settings_save_failed = "Settings changed for this session but could not be saved: {reason}",
         settings_reset = "Local settings reset.",
         settings_reset_failed = "Local settings could not be reset on disk.",
         rejoining = "Rejoining...",
         rollback_applied = "Rollback applied.",
         original_date_restored = "Original date restored.",
         date_change_unconfirmed = "The date change was not confirmed.",
+        diagnostics = "Diagnostics",
+        diagnostics_description = "Inspect runtime capabilities and feature targets without exposing account data.",
+        diagnostics_runtime = "Runtime",
+        diagnostics_capabilities = "Executor capabilities",
+        diagnostics_targets = "Game targets",
+        copy_diagnostics = "Copy diagnostics",
+        diagnostics_copied = "Diagnostics copied to clipboard.",
     },
     ru = {
         tab_kg = "Смена KG",
@@ -125,6 +140,7 @@ local locales = {
         ps_code_label = "Приватный сервер",
         copy_ps = "Копировать код PS",
         unavailable = "Недоступно",
+        available = "Доступно",
         section_settings = "Настройки",
         language = "Язык",
         english = "English",
@@ -156,12 +172,26 @@ local locales = {
         ps_copied = "Код PS скопирован.",
         github_copied = "Адрес репозитория скопирован.",
         clipboard_failed = "Операция с буфером обмена не удалась.",
+        remote_unavailable = "Действие недоступно: необходимый игровой remote не найден.",
+        remote_failed = "Игра отклонила действие: {reason}",
+        operation_busy = "Операция с датой уже выполняется.",
+        operation_failed = "Операция завершилась ошибкой: {reason}",
+        value_read_failed = "Не удалось прочитать текущее игровое значение: {reason}",
+        value_write_failed = "Не удалось изменить игровое значение: {reason}",
+        settings_save_failed = "Настройки изменены для этой сессии, но не сохранены: {reason}",
         settings_reset = "Локальные настройки сброшены.",
         settings_reset_failed = "Не удалось сбросить локальные настройки на диске.",
         rejoining = "Переподключение...",
         rollback_applied = "Откат применён.",
         original_date_restored = "Исходная дата восстановлена.",
         date_change_unconfirmed = "Изменение даты не подтверждено.",
+        diagnostics = "Диагностика",
+        diagnostics_description = "Проверка среды и игровых целей без раскрытия данных аккаунта.",
+        diagnostics_runtime = "Среда выполнения",
+        diagnostics_capabilities = "Возможности executor-а",
+        diagnostics_targets = "Игровые цели",
+        copy_diagnostics = "Копировать диагностику",
+        diagnostics_copied = "Диагностика скопирована.",
     },
 }
 
@@ -170,7 +200,8 @@ local function translate(language, key, values)
     local result = assert(locale[key] or locales.en[key], "missing translation: " .. tostring(key))
     if values then
         result = result:gsub("{([%w_]+)}", function(name)
-            return tostring(values[name] or "{" .. name .. "}")
+            local replacement = values[name]
+            return if replacement == nil then "{" .. name .. "}" else tostring(replacement)
         end)
     end
     return result

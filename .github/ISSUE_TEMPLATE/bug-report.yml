@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a reproducible runtime, loader, or release problem.
+title: "bug: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the in-app Diagnostics button when possible. Remove private-server codes, account secrets, and personal data.
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Channel
+      options:
+        - Stable loader
+        - Dev loader
+        - Development toolchain or Actions
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v1.0.0 or full commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Executor and version
+      description: Do not include a license key or credential.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Paste the privacy-safe report from Settings → Diagnostics.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: List the smallest exact sequence that triggers the problem.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Error output or screenshots
+      description: Redact private-server codes and personal data.
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I reproduced this on the stated channel and version.
+          required: true
+        - label: I removed credentials, private-server codes, and personal data.
+          required: true

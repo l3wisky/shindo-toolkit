@@ -1,23 +1,27 @@
-local repository = "https://raw.githubusercontent.com/l3wisky/shindo-toolkit/"
-local runtimeRef = "v1.0.0"
+local HttpService = game:GetService("HttpService")
+local artifactUrl = "https://github.com/l3wisky/shindo-toolkit/releases/latest/download/shindo-toolkit.luau"
+local url = artifactUrl .. "?cache=" .. HttpService:GenerateGUID(false)
 
-local function loadModule(path)
-    local url = repository .. runtimeRef .. "/" .. path
-    local downloaded, source = pcall(function()
-        return game:HttpGet(url)
-    end)
-    if not downloaded then
-        error("Shindo Toolkit failed to download " .. path .. ": " .. tostring(source))
-    end
-
-    local chunk, compileError = loadstring(source, "ShindoToolkit/" .. path)
-    if not chunk then
-        error("Shindo Toolkit failed to compile " .. path .. ": " .. tostring(compileError))
-    end
-    return chunk()
+local downloaded, source = pcall(function()
+    return game:HttpGet(url)
+end)
+if not downloaded then
+    error("Shindo Toolkit failed to download the stable release: " .. tostring(source), 0)
+end
+if type(source) ~= "string" or source == "" then
+    error("Shindo Toolkit received an empty stable release", 0)
+end
+if type(loadstring) ~= "function" then
+    error("Shindo Toolkit requires loadstring support", 0)
 end
 
-return loadModule("src/init.luau")({
-    load = loadModule,
-    development = false,
-})
+local chunk, compileError = loadstring(source, "ShindoToolkit/release")
+if not chunk then
+    error("Shindo Toolkit failed to compile the stable release: " .. tostring(compileError), 0)
+end
+
+local executed, result = pcall(chunk)
+if not executed then
+    error("Shindo Toolkit failed to start the stable release: " .. tostring(result), 0)
+end
+return result

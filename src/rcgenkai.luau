@@ -13,11 +13,6 @@ return function(app)
     table.sort(bloodlineNames)
     local selectedBloodline = bloodlineNames[1]
 
-    local function item1Value()
-        local rcgenkai = workspace:FindFirstChild("RCGENKAI")
-        return rcgenkai and rcgenkai:FindFirstChild("item1")
-    end
-
     tab:CreateButton({
         name = app.ui("about_rc"),
         description = app.ui("rc_guidance"),
@@ -56,29 +51,19 @@ return function(app)
     actions:CreateButton({
         name = app.ui("apply_rc"),
         callback = function()
-            local value = item1Value()
-            if not value then
-                app.error("target_missing")
-                return
-            end
-            if app.originals.rcgenkai == nil then
-                app.originals.rcgenkai = value.Value
-            end
-            value.Value = bloodlineIds[selectedBloodline]
-            app.toast("applied", { value = selectedBloodline })
+            app.values.apply(
+                workspace,
+                { "RCGENKAI", "item1" },
+                "rcgenkai",
+                bloodlineIds[selectedBloodline],
+                selectedBloodline
+            )
         end,
     })
     actions:CreateButton({
         name = app.ui("restore_rc"),
         callback = function()
-            local value = item1Value()
-            local original = app.originals.rcgenkai
-            if not value or original == nil then
-                app.error("original_unavailable")
-                return
-            end
-            value.Value = original
-            app.toast("restored", { value = original })
+            app.values.restore(workspace, { "RCGENKAI", "item1" }, "rcgenkai")
         end,
     })
 end
