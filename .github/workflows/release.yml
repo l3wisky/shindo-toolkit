@@ -62,6 +62,11 @@ jobs:
               local tag_json="$1"
               local object_type
               local object_sha
+              if ! jq -e \
+                  'type == "object" and (.object.type | type == "string") and (.object.sha | type == "string")' \
+                  > /dev/null <<< "$tag_json"; then
+                  return 1
+              fi
               object_type="$(jq -r '.object.type' <<< "$tag_json")"
               object_sha="$(jq -r '.object.sha' <<< "$tag_json")"
               if [[ "$object_type" == "commit" ]]; then
@@ -75,7 +80,12 @@ jobs:
 
           release_json="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft 2>/dev/null || true)"
           if [[ -n "$release_json" && "$(jq -r '.isDraft' <<< "$release_json")" == "false" ]]; then
-              tag_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}")"
+              tag_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" 2>/dev/null || true)"
+              if ! jq -e 'type == "object" and (.object.sha | type == "string")' \
+                  > /dev/null <<< "$tag_json"; then
+                  printf 'Published release %s has no matching Git tag.\n' "$RELEASE_TAG" >&2
+                  exit 1
+              fi
               tag_commit="$(resolve_tag_commit "$tag_json")"
               if [[ "$tag_commit" != "$GITHUB_SHA" ]]; then
                   printf 'Version %s is already published from %s; bump src/config.luau before releasing %s.\n' \
@@ -88,7 +98,8 @@ jobs:
           fi
 
           tag_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" 2>/dev/null || true)"
-          if [[ -z "$tag_json" ]]; then
+          if ! jq -e 'type == "object" and (.object.sha | type == "string")' \
+              > /dev/null <<< "$tag_json"; then
               tag_json="$(gh api \
                   --method POST \
                   "repos/${GITHUB_REPOSITORY}/git/refs" \
