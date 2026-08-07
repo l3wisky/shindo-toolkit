@@ -1,14 +1,12 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions: {}
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 jobs:
@@ -18,14 +16,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
-      attestations: write # Publish bundle provenance.
-      contents: write # Create the tag, release, and assets.
-      id-token: write # Request the OIDC identity used to sign provenance.
+      contents: write
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Install pinned toolchain
@@ -40,111 +35,33 @@ jobs:
       - name: Validate, test, and build
         run: scripts/ci.sh
 
-      - name: Read release metadata
+      - name: Read release version
         id: metadata
         shell: bash
         run: |
-          IFS=$'\t' read -r version _ < <(.tools/luau-0.733/luau scripts/metadata.luau)
+          .tools/luau-0.733/luau scripts/metadata.luau > "${RUNNER_TEMP}/shindo-metadata"
+          IFS=$'\t' read -r version _ < "${RUNNER_TEMP}/shindo-metadata"
+          if [[ -z "$version" ]]; then
+              printf 'Release version is empty.\n' >&2
+              exit 1
+          fi
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
           printf 'tag=v%s\n' "$version" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare draft release
-        id: prepare
+      - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
           RELEASE_VERSION: ${{ steps.metadata.outputs.version }}
-        shell: bash
         run: |
-          set -euo pipefail
-
-          resolve_tag_commit() {
-              local tag_json="$1"
-              local object_type
-              local object_sha
-              if ! jq -e \
-                  'type == "object" and (.object.type | type == "string") and (.object.sha | type == "string")' \
-                  > /dev/null <<< "$tag_json"; then
-                  return 1
-              fi
-              object_type="$(jq -r '.object.type' <<< "$tag_json")"
-              object_sha="$(jq -r '.object.sha' <<< "$tag_json")"
-              if [[ "$object_type" == "commit" ]]; then
-                  printf '%s\n' "$object_sha"
-                  return
-              fi
-
-              git fetch --force origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
-              git rev-list -n 1 "$RELEASE_TAG"
-          }
-
-          release_json="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft 2>/dev/null || true)"
-          if [[ -n "$release_json" && "$(jq -r '.isDraft' <<< "$release_json")" == "false" ]]; then
-              tag_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" 2>/dev/null || true)"
-              if ! jq -e 'type == "object" and (.object.sha | type == "string")' \
-                  > /dev/null <<< "$tag_json"; then
-                  printf 'Published release %s has no matching Git tag.\n' "$RELEASE_TAG" >&2
-                  exit 1
-              fi
-              tag_commit="$(resolve_tag_commit "$tag_json")"
-              if [[ "$tag_commit" != "$GITHUB_SHA" ]]; then
-                  printf 'Version %s is already published from %s; bump src/config.luau before releasing %s.\n' \
-                      "$RELEASE_VERSION" "$tag_commit" "$GITHUB_SHA" >&2
-                  exit 1
-              fi
-              printf 'publish=false\n' >> "$GITHUB_OUTPUT"
-              printf 'Release %s is already published; leaving its assets unchanged.\n' "$RELEASE_TAG"
-              exit 0
-          fi
-
-          tag_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" 2>/dev/null || true)"
-          if ! jq -e 'type == "object" and (.object.sha | type == "string")' \
-              > /dev/null <<< "$tag_json"; then
-              tag_json="$(gh api \
-                  --method POST \
-                  "repos/${GITHUB_REPOSITORY}/git/refs" \
-                  -f ref="refs/tags/${RELEASE_TAG}" \
-                  -f sha="$GITHUB_SHA")"
-          fi
-
-          tag_commit="$(resolve_tag_commit "$tag_json")"
-          if [[ "$tag_commit" != "$GITHUB_SHA" ]]; then
-              printf 'Tag %s points to %s, not %s.\n' "$RELEASE_TAG" "$tag_commit" "$GITHUB_SHA" >&2
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+              printf 'Release %s already exists. Bump src/config.luau before publishing.\n' "$RELEASE_TAG" >&2
               exit 1
           fi
-
-          if [[ -z "$release_json" ]]; then
-              gh release create "$RELEASE_TAG" \
-                  --repo "$GITHUB_REPOSITORY" \
-                  --draft \
-                  --verify-tag \
-                  --generate-notes \
-                  --title "Shindo Toolkit ${RELEASE_VERSION}"
-          fi
-
-          printf 'publish=true\n' >> "$GITHUB_OUTPUT"
-
-      - name: Attest release bundle
-        if: steps.prepare.outputs.publish == 'true'
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: dist/shindo-toolkit.luau
-
-      - name: Upload release assets
-        if: steps.prepare.outputs.publish == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
-        run: |
-          gh release upload "$RELEASE_TAG" \
+          gh release create "$RELEASE_TAG" \
               dist/shindo-toolkit.luau \
-              dist/SHA256SUMS \
-              --clobber \
-              --repo "$GITHUB_REPOSITORY"
-
-      - name: Publish release
-        if: steps.prepare.outputs.publish == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
-        run: gh release edit "$RELEASE_TAG" --draft=false --latest --repo "$GITHUB_REPOSITORY"
+              --generate-notes \
+              --latest \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Shindo Toolkit ${RELEASE_VERSION}"

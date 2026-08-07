@@ -43,8 +43,7 @@ return function(app)
     local function fireStartEvent(command, value)
         local remote = startEvent()
         if not remote then
-            app.error("remote_unavailable")
-            return false
+            return app.missing("remote_unavailable", "Players.LocalPlayer.startevent")
         end
         local fired, reason = pcall(function()
             remote:FireServer(command, value)
@@ -104,7 +103,7 @@ return function(app)
     local function captureDate()
         local band = bandValue()
         if not band then
-            app.error("target_missing")
+            app.missing("target_missing", "Players.LocalPlayer.statz.character.band")
             return nil
         end
         if app.originals.date == nil then
@@ -244,8 +243,7 @@ return function(app)
                 end
                 local band = bandValue()
                 if not band then
-                    app.error("target_missing")
-                    return false
+                    return app.missing("target_missing", "Players.LocalPlayer.statz.character.band")
                 end
                 return applyDate(band, app.originals.date, "original_date_restored")
             end)
@@ -452,63 +450,6 @@ return function(app)
                                 app.rebuild()
                                 app.toast("settings_reset")
                             end)
-                        end,
-                    },
-                },
-            })
-        end,
-    })
-
-    tab:CreateButton({
-        name = app.ui("diagnostics"),
-        description = app.ui("diagnostics_description"),
-        callback = function()
-            local snapshot = app.diagnostics.snapshot()
-            local function status(value)
-                return app.t(if value then "available" else "unavailable")
-            end
-
-            app.window:Popup({
-                title = app.t("diagnostics"),
-                content = app.t("diagnostics_description"),
-                boxes = {
-                    {
-                        title = app.t("diagnostics_runtime"),
-                        description = table.concat({
-                            "version: " .. snapshot.version,
-                            "channel: " .. snapshot.channel,
-                            "place: " .. snapshot.placeId,
-                            "rayfield: " .. snapshot.rayfield,
-                        }, "\n"),
-                    },
-                    {
-                        title = app.t("diagnostics_capabilities"),
-                        description = table.concat({
-                            "filesystem: " .. status(snapshot.filesystem),
-                            "clipboard: " .. status(snapshot.clipboard),
-                        }, "\n"),
-                    },
-                    {
-                        title = app.t("diagnostics_targets"),
-                        description = table.concat({
-                            "startevent: " .. status(snapshot.startEvent),
-                            "bloodline: " .. status(snapshot.bloodline),
-                            "kenjutsu: " .. status(snapshot.kenjutsu),
-                            "date: " .. status(snapshot.date),
-                            "rcgenkai: " .. status(snapshot.rcgenkai),
-                        }, "\n"),
-                    },
-                },
-                options = {
-                    {
-                        text = app.ui("close"),
-                        style = "neutral",
-                    },
-                    {
-                        text = app.ui("copy_diagnostics"),
-                        style = "primary",
-                        callback = function()
-                            copy(app.diagnostics.report(), "diagnostics_copied")
                         end,
                     },
                 },

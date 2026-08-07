@@ -12,6 +12,3 @@ updates:
     rebase-strategy: auto
     cooldown:
       default-days: 7
-    labels:
-      - dependencies
-      - actions

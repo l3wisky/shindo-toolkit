@@ -118,6 +118,10 @@ local app = {
     toast = function(key)
         table.insert(messages, "toast:" .. key)
     end,
+    missing = function(key, path)
+        table.insert(messages, "missing:" .. key .. ":" .. path)
+        return false
+    end,
 }
 local target = node("original")
 local root = node(nil, { nested = node(nil, { target = target }) })
@@ -130,7 +134,13 @@ check(values.apply(root, { "nested", "target" }, "sample", "second", "Second"), 
 check(app.originals.sample == "original", "second apply must not replace the original")
 check(values.restore(root, { "nested", "target" }, "sample"), "restore should succeed")
 check(target.Value == "original", "restore should write the captured original")
-check(not values.apply(root, { "missing" }, "missing", "value", "Value"), "missing target should fail")
-check(messages[#messages] == "error:target_missing", "missing target should report a specific error")
+check(
+    not values.apply(root, { "missing" }, "missing", "value", "Value", "Root.missing"),
+    "missing target should fail"
+)
+check(
+    messages[#messages] == "missing:target_missing:Root.missing",
+    "missing target should report its exact path"
+)
 
 print(string.format("unit: %d checks passed", checks))

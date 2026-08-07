@@ -12,7 +12,6 @@ grep -Fq 'raw.githubusercontent.com/l3wisky/shindo-toolkit/main/loader.luau' REA
 grep -Fq 'raw.githubusercontent.com/l3wisky/shindo-toolkit/dev/loader.dev.luau' README.md
 grep -Fq 'raw.githubusercontent.com/l3wisky/shindo-toolkit/main/loader.luau' README.ru.md
 grep -Fq 'raw.githubusercontent.com/l3wisky/shindo-toolkit/dev/loader.dev.luau' README.ru.md
-grep -Fq "## [${version}]" CHANGELOG.md
 grep -Fq "$rayfield_url" NOTICE
 grep -Fq "SHA-256: ${rayfield_sha}" NOTICE
 grep -Fq "Shindo Toolkit v${version}" dist/shindo-toolkit.luau
@@ -34,11 +33,6 @@ translation_keys="$(
 while IFS= read -r translation_key; do
     grep -Eq "^[[:space:]]+${translation_key} =" src/i18n.luau
 done <<< "$translation_keys"
-(
-    cd dist
-    sha256sum --check --strict SHA256SUMS
-)
-
 rayfield_temp="$(mktemp "${TMPDIR:-/tmp}/rayfield-gen2.XXXXXX.luau")"
 cleanup() {
     rm -f "$rayfield_temp"

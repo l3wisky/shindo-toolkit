@@ -76,14 +76,20 @@ return function(app)
                 { "statz", "main", "kg1" },
                 "bloodline",
                 bloodlineIds[selectedBloodline],
-                selectedBloodline
+                selectedBloodline,
+                "Players.LocalPlayer.statz.main.kg1"
             )
         end,
     })
     bloodlineActions:CreateButton({
         name = app.ui("restore_bloodline"),
         callback = function()
-            app.values.restore(player, { "statz", "main", "kg1" }, "bloodline")
+            app.values.restore(
+                player,
+                { "statz", "main", "kg1" },
+                "bloodline",
+                "Players.LocalPlayer.statz.main.kg1"
+            )
         end,
     })
 
@@ -112,14 +118,20 @@ return function(app)
                 { "statz", "breathingstyle" },
                 "kenjutsu",
                 kenjutsuIds[selectedKenjutsu],
-                selectedKenjutsu
+                selectedKenjutsu,
+                "Players.LocalPlayer.statz.breathingstyle"
             )
         end,
     })
     kenjutsuActions:CreateButton({
         name = app.ui("restore_kenjutsu"),
         callback = function()
-            app.values.restore(player, { "statz", "breathingstyle" }, "kenjutsu")
+            app.values.restore(
+                player,
+                { "statz", "breathingstyle" },
+                "kenjutsu",
+                "Players.LocalPlayer.statz.breathingstyle"
+            )
         end,
     })
 end

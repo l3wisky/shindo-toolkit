@@ -24,7 +24,3 @@ IFS=$'\t' read -r version _ < <(luau scripts/metadata.luau)
 } > "$artifact_temp"
 
 mv "$artifact_temp" dist/shindo-toolkit.luau
-(
-    cd dist
-    sha256sum shindo-toolkit.luau > SHA256SUMS
-)
