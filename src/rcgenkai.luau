@@ -56,14 +56,15 @@ return function(app)
                 { "RCGENKAI", "item1" },
                 "rcgenkai",
                 bloodlineIds[selectedBloodline],
-                selectedBloodline
+                selectedBloodline,
+                "workspace.RCGENKAI.item1"
             )
         end,
     })
     actions:CreateButton({
         name = app.ui("restore_rc"),
         callback = function()
-            app.values.restore(workspace, { "RCGENKAI", "item1" }, "rcgenkai")
+            app.values.restore(workspace, { "RCGENKAI", "item1" }, "rcgenkai", "workspace.RCGENKAI.item1")
         end,
     })
 end
