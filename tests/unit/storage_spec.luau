@@ -65,46 +65,49 @@ return function(check)
     configureStorage(corruptApp, codec(nil, "decode failed"))
     check(corruptApp.storage.state.language == "en", "corrupt settings should use the default language")
     check(corruptApp.storage.state.theme == "default", "corrupt settings should use the default theme")
-    check(
-        corruptApp.storage.state.notifications == true,
-        "corrupt settings should use default notifications"
-    )
+    check(corruptApp.storage.state.notifications == true, "corrupt settings should use default notifications")
 
     local oldApp = createApp({ contents = "old" })
-    configureStorage(oldApp, codec({
-        version = 0,
-        language = "ru",
-        theme = "cobalt",
-        notifications = false,
-    }))
+    configureStorage(
+        oldApp,
+        codec({
+            version = 0,
+            language = "ru",
+            theme = "cobalt",
+            notifications = false,
+        })
+    )
     check(oldApp.storage.state.language == "en", "unknown settings versions should be ignored")
     check(oldApp.storage.state.theme == "default", "unknown settings versions should not leak values")
 
     local validApp = createApp({ contents = "valid", filesystem = true })
-    configureStorage(validApp, codec({
-        version = 1,
-        language = "ru",
-        theme = "cobalt",
-        notifications = false,
-    }))
+    configureStorage(
+        validApp,
+        codec({
+            version = 1,
+            language = "ru",
+            theme = "cobalt",
+            notifications = false,
+        })
+    )
     check(validApp.storage.persistent == true, "filesystem capability should be exposed")
     check(validApp.storage.state.language == "ru", "valid language should load")
     check(validApp.storage.state.theme == "cobalt", "valid theme should load")
     check(validApp.storage.state.notifications == false, "false notifications should be preserved")
 
     local invalidFieldsApp = createApp({ contents = "valid" })
-    configureStorage(invalidFieldsApp, codec({
-        version = 1,
-        language = "unknown",
-        theme = "missing",
-        notifications = "yes",
-    }))
+    configureStorage(
+        invalidFieldsApp,
+        codec({
+            version = 1,
+            language = "unknown",
+            theme = "missing",
+            notifications = "yes",
+        })
+    )
     check(invalidFieldsApp.storage.state.language == "en", "unknown language should be sanitized")
     check(invalidFieldsApp.storage.state.theme == "default", "unknown theme should be sanitized")
-    check(
-        invalidFieldsApp.storage.state.notifications == true,
-        "invalid notifications should be sanitized"
-    )
+    check(invalidFieldsApp.storage.state.notifications == true, "invalid notifications should be sanitized")
 
     local failingApp = createApp({ writeFailure = "disk full" })
     configureStorage(failingApp, codec(nil))
