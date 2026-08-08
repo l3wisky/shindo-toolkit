@@ -7,6 +7,7 @@ local specs = {
     { name = "game_client", run = require("./unit/game_client_spec") },
     { name = "date_controller", run = require("./unit/date_controller_spec") },
     { name = "rayfield_runtime", run = require("./unit/rayfield_runtime_spec") },
+    { name = "init_lifecycle", run = require("./integration/init_spec") },
 }
 
 local checks = 0
@@ -21,4 +22,4 @@ for _, spec in ipairs(specs) do
     print(string.format("%s: %d checks passed", spec.name, checks - before))
 end
 
-print(string.format("unit: %d checks passed", checks))
+print(string.format("tests: %d checks passed", checks))

@@ -33,6 +33,17 @@ return function(app)
         return true
     end
 
+    local function captureOriginal(target, originalKey, value)
+        local original = app.originals[originalKey]
+        if type(original) ~= "table" or original.target ~= target then
+            original = {
+                target = target,
+                value = value,
+            }
+            app.originals[originalKey] = original
+        end
+    end
+
     function valueState.applyTarget(target, originalKey, value, displayValue, targetPath)
         if not target then
             return app.missing("target_missing", targetPath)
@@ -43,9 +54,7 @@ return function(app)
             app.error("value_read_failed", { reason = readError })
             return false
         end
-        if app.originals[originalKey] == nil then
-            app.originals[originalKey] = current
-        end
+        captureOriginal(target, originalKey, current)
         if not write(target, value) then
             return false
         end
@@ -59,14 +68,14 @@ return function(app)
         end
 
         local original = app.originals[originalKey]
-        if original == nil then
+        if type(original) ~= "table" or original.target ~= target then
             app.error("original_unavailable")
             return false
         end
-        if not write(target, original) then
+        if not write(target, original.value) then
             return false
         end
-        app.toast("restored", { value = original })
+        app.toast("restored", { value = original.value })
         return true
     end
 
