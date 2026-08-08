@@ -16,16 +16,20 @@ for executable in stylua selene darklua luau luau-analyze luau-compile; do
     fi
 done
 
-stylua --check .
-selene loader.luau loader.dev.luau src build scripts tests
-luau-analyze loader.luau loader.dev.luau src/*.luau build/*.luau scripts/*.luau tests/*.luau
-luau tests/unit.luau
+mapfile -d '' luau_files < <(
+    find loader.luau loader.dev.luau src build scripts tests -type f -name '*.luau' -print0 \
+        | LC_ALL=C sort -z
+)
 
-find loader.luau loader.dev.luau src build scripts tests -type f -name '*.luau' -print0 \
-    | LC_ALL=C sort -z \
-    | while IFS= read -r -d '' file; do
-        luau-compile "$file" > /dev/null
-    done
+stylua --check .
+selene "${luau_files[@]}"
+luau-analyze "${luau_files[@]}"
+luau tests/run.luau
+bash -n scripts/*.sh
+
+for file in "${luau_files[@]}"; do
+    luau-compile "$file" > /dev/null
+done
 
 scripts/build.sh
 luau-compile dist/shindo-toolkit.luau > /dev/null
