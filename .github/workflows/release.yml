@@ -32,6 +32,9 @@ jobs:
       - name: Install pinned Luau CLI
         run: scripts/install-luau-cli.sh
 
+      - name: Install pinned ShellCheck
+        run: bash scripts/install-shellcheck.sh
+
       - name: Validate, test, and build
         run: scripts/ci.sh
 
