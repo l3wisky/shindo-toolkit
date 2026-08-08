@@ -1,5 +1,4 @@
 return function(app)
-    local player = game:GetService("Players").LocalPlayer
     local tab = app.window:CreateTab({
         name = app.ui("tab_kg"),
         icon = app.icons.kg,
@@ -71,25 +70,21 @@ return function(app)
     bloodlineActions:CreateButton({
         name = app.ui("apply_bloodline"),
         callback = function()
-            app.values.apply(
-                player,
-                { "statz", "main", "kg1" },
+            local path = app.game.bloodlineSlotPath(1)
+            app.values.applyTarget(
+                app.game.getBloodlineSlot(1),
                 "bloodline",
                 bloodlineIds[selectedBloodline],
                 selectedBloodline,
-                "Players.LocalPlayer.statz.main.kg1"
+                path
             )
         end,
     })
     bloodlineActions:CreateButton({
         name = app.ui("restore_bloodline"),
         callback = function()
-            app.values.restore(
-                player,
-                { "statz", "main", "kg1" },
-                "bloodline",
-                "Players.LocalPlayer.statz.main.kg1"
-            )
+            local path = app.game.bloodlineSlotPath(1)
+            app.values.restoreTarget(app.game.getBloodlineSlot(1), "bloodline", path)
         end,
     })
 
@@ -113,25 +108,19 @@ return function(app)
     kenjutsuActions:CreateButton({
         name = app.ui("apply_kenjutsu"),
         callback = function()
-            app.values.apply(
-                player,
-                { "statz", "breathingstyle" },
+            app.values.applyTarget(
+                app.game.getKenjutsu(),
                 "kenjutsu",
                 kenjutsuIds[selectedKenjutsu],
                 selectedKenjutsu,
-                "Players.LocalPlayer.statz.breathingstyle"
+                app.game.paths.kenjutsu
             )
         end,
     })
     kenjutsuActions:CreateButton({
         name = app.ui("restore_kenjutsu"),
         callback = function()
-            app.values.restore(
-                player,
-                { "statz", "breathingstyle" },
-                "kenjutsu",
-                "Players.LocalPlayer.statz.breathingstyle"
-            )
+            app.values.restoreTarget(app.game.getKenjutsu(), "kenjutsu", app.game.paths.kenjutsu)
         end,
     })
 end

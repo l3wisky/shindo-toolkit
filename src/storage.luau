@@ -1,5 +1,6 @@
-return function(app)
-    local HttpService = game:GetService("HttpService")
+return function(app, codec)
+    codec = codec or game:GetService("HttpService")
+
     local path = app.platform.storageFolder .. "/settings.v1.json"
     local defaults = {
         version = 1,
@@ -21,7 +22,7 @@ return function(app)
     local contents = app.platform.readText(path)
     if contents then
         local decodedSuccessfully, decoded = pcall(function()
-            return HttpService:JSONDecode(contents)
+            return codec:JSONDecode(contents)
         end)
         if decodedSuccessfully and type(decoded) == "table" and decoded.version == defaults.version then
             state.language = if decoded.language == "ru" then "ru" else defaults.language
@@ -41,7 +42,7 @@ return function(app)
 
     function storage.save()
         local encodedSuccessfully, encoded = pcall(function()
-            return HttpService:JSONEncode(state)
+            return codec:JSONEncode(state)
         end)
         if not encodedSuccessfully then
             storage.lastError = "settings encoding failed: " .. tostring(encoded)

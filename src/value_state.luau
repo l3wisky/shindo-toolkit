@@ -33,15 +33,9 @@ return function(app)
         return true
     end
 
-    local function missing(path, targetPath)
-        local label = targetPath or table.concat(path, ".")
-        return app.missing("target_missing", label)
-    end
-
-    function valueState.apply(root, path, originalKey, value, displayValue, targetPath)
-        local target = find(root, path)
+    function valueState.applyTarget(target, originalKey, value, displayValue, targetPath)
         if not target then
-            return missing(path, targetPath)
+            return app.missing("target_missing", targetPath)
         end
 
         local current, readError = read(target)
@@ -59,11 +53,11 @@ return function(app)
         return true
     end
 
-    function valueState.restore(root, path, originalKey, targetPath)
-        local target = find(root, path)
+    function valueState.restoreTarget(target, originalKey, targetPath)
         if not target then
-            return missing(path, targetPath)
+            return app.missing("target_missing", targetPath)
         end
+
         local original = app.originals[originalKey]
         if original == nil then
             app.error("original_unavailable")
@@ -74,6 +68,16 @@ return function(app)
         end
         app.toast("restored", { value = original })
         return true
+    end
+
+    function valueState.apply(root, path, originalKey, value, displayValue, targetPath)
+        local label = targetPath or table.concat(path, ".")
+        return valueState.applyTarget(find(root, path), originalKey, value, displayValue, label)
+    end
+
+    function valueState.restore(root, path, originalKey, targetPath)
+        local label = targetPath or table.concat(path, ".")
+        return valueState.restoreTarget(find(root, path), originalKey, label)
     end
 
     valueState.find = find

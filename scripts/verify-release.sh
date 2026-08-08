@@ -26,7 +26,7 @@ while IFS= read -r module_path; do
 done <<< "$module_paths"
 
 translation_keys="$(
-    grep -hoE 'app\.(ui|t|error|toast)\("[a-z0-9_]+' src/*.luau \
+    grep -rhoE --include='*.luau' 'app\.(ui|t|error|toast)\("[a-z0-9_]+' src \
         | sed -E 's/^app\.(ui|t|error|toast)\("//' \
         | LC_ALL=C sort -u
 )"
