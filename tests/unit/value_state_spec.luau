@@ -21,10 +21,7 @@ return function(check)
     local root = node(nil, { nested = node(nil, { target = target }) })
     local values = createValueState(app)
 
-    check(
-        values.apply(root, { "nested", "target" }, "sample", "first", "First"),
-        "apply should succeed"
-    )
+    check(values.apply(root, { "nested", "target" }, "sample", "first", "First"), "apply should succeed")
     check(target.Value == "first", "apply should write the selected value")
     check(app.originals.sample == "original", "apply should capture the original once")
     check(
