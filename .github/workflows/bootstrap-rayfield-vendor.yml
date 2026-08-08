@@ -29,7 +29,7 @@ jobs:
 
       - name: Commit vendor snapshot
         run: |
-          if git diff --quiet -- vendor/rayfield-gen2/bundled.luau; then
+          if [[ -z "$(git status --porcelain -- vendor/rayfield-gen2/bundled.luau)" ]]; then
               printf 'Rayfield vendor snapshot is already current.\n'
               exit 0
           fi
