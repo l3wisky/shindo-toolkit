@@ -57,7 +57,8 @@ module_paths="$(
         | LC_ALL=C sort -u
 )"
 while IFS= read -r module_path; do
-    grep -Fq "["${module_path}"]" build/entry.luau
+    module_key="$(printf '["%s"]' "$module_path")"
+    grep -Fq "$module_key" build/entry.luau
 done <<< "$module_paths"
 
 translation_keys="$(
