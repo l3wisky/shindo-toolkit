@@ -1,15 +1,42 @@
 local HttpService = game:GetService("HttpService")
-local repository = "https://raw.githubusercontent.com/l3wisky/shindo-toolkit/"
-local runtimeRef = "dev"
+local repositoryName = "l3wisky/shindo-toolkit"
+local rawRepository = "https://raw.githubusercontent.com/" .. repositoryName .. "/"
+local runtimeBranch = "dev"
 local cacheToken = HttpService:GenerateGUID(false)
 local moduleCache = {}
+
+local function resolveRuntimeRef()
+    local url = "https://api.github.com/repos/"
+        .. repositoryName
+        .. "/commits/"
+        .. runtimeBranch
+        .. "?cache="
+        .. cacheToken
+    local downloaded, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+    if not downloaded then
+        error("Shindo Toolkit failed to resolve the dev commit: " .. tostring(response), 0)
+    end
+
+    local decodedSuccessfully, metadata = pcall(function()
+        return HttpService:JSONDecode(response)
+    end)
+    local commit = if decodedSuccessfully and type(metadata) == "table" then metadata.sha else nil
+    if type(commit) ~= "string" or not string.match(commit, "^[0-9a-fA-F]+$") or #commit ~= 40 then
+        error("Shindo Toolkit received an invalid dev commit from GitHub", 0)
+    end
+    return commit
+end
+
+local runtimeRef = resolveRuntimeRef()
 
 local function loadModule(path)
     if moduleCache[path] ~= nil then
         return moduleCache[path]
     end
 
-    local url = repository .. runtimeRef .. "/" .. path .. "?cache=" .. cacheToken
+    local url = rawRepository .. runtimeRef .. "/" .. path
     local downloaded, source = pcall(function()
         return game:HttpGet(url)
     end)

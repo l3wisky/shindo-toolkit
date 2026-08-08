@@ -4,7 +4,8 @@ set -euo pipefail
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
-luau_bin="$project_root/.tools/luau-0.733"
+source scripts/tool-versions.sh
+luau_bin="$project_root/.tools/luau-$LUAU_VERSION"
 if [[ -d "$luau_bin" ]]; then
     export PATH="$luau_bin:$PATH"
 fi

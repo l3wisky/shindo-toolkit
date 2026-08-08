@@ -39,7 +39,8 @@ verify_sha256() {
 }
 
 grep -Fq "$artifact_url" loader.luau
-grep -Fq 'local runtimeRef = "dev"' loader.dev.luau
+grep -Fq 'local runtimeBranch = "dev"' loader.dev.luau
+grep -Fq 'https://api.github.com/repos/' loader.dev.luau
 grep -Fq 'raw.githubusercontent.com/l3wisky/shindo-toolkit/main/loader.luau' README.md
 grep -Fq 'raw.githubusercontent.com/l3wisky/shindo-toolkit/dev/loader.dev.luau' README.md
 grep -Fq 'raw.githubusercontent.com/l3wisky/shindo-toolkit/main/loader.luau' README.ru.md
@@ -50,6 +51,10 @@ grep -Fq "Shindo Toolkit v${version}" dist/shindo-toolkit.luau
 grep -Fq "Bundled dependency: Rayfield Gen2 ${rayfield_version} source under MPL-2.0:" \
     dist/shindo-toolkit.luau
 grep -Fq 'https://www.mozilla.org/MPL/2.0/' dist/shindo-toolkit.luau
+grep -Fq "https://github.com/l3wisky/shindo-toolkit/tree/v${version}/vendor/rayfield-gen2" \
+    dist/shindo-toolkit.luau
+grep -Fq "Source: https://github.com/l3wisky/shindo-toolkit/tree/v${version}" \
+    dist/shindo-toolkit.luau
 
 module_paths="$(
     grep -oE 'bootstrap\.load\("[^"]+' src/init.luau \

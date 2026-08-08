@@ -2,7 +2,8 @@
 set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-version="0.11.0"
+source "$project_root/scripts/tool-versions.sh"
+version="$SHELLCHECK_VERSION"
 destination="$project_root/.tools/shellcheck-$version"
 system="$(uname -s)"
 machine="$(uname -m)"
