@@ -17,9 +17,20 @@ return function(bootstrap)
     local createPlatform = bootstrap.load("src/platform.luau")
     local configureStorage = bootstrap.load("src/storage.luau")
     local createValueState = bootstrap.load("src/value_state.luau")
-    local createKgChanger = bootstrap.load("src/kg_changer.luau")
-    local createRcgenkai = bootstrap.load("src/rcgenkai.luau")
-    local createMisc = bootstrap.load("src/misc.luau")
+    local validateRayfield = bootstrap.load("src/runtime/rayfield.luau")
+    local bundledRayfield = bootstrap.load("vendor/rayfield-gen2/bundled.luau")
+    local createGameClient = bootstrap.load("src/game/client.luau")
+    local createKgChanger = bootstrap.load("src/features/kg_changer.luau")
+    local createRcgenkai = bootstrap.load("src/features/rcgenkai.luau")
+    local createMisc = bootstrap.load("src/features/misc/init.luau")
+    local miscModules = {
+        outfit = bootstrap.load("src/features/misc/outfit.luau"),
+        teleport = bootstrap.load("src/features/misc/teleport.luau"),
+        date = bootstrap.load("src/features/misc/date.luau"),
+        createDateController = bootstrap.load("src/features/misc/date_controller.luau"),
+        playerInfo = bootstrap.load("src/features/misc/player_info.luau"),
+        settings = bootstrap.load("src/features/misc/settings.luau"),
+    }
 
     local development = bootstrap.development == true
     local platform = createPlatform(development)
@@ -33,39 +44,7 @@ return function(bootstrap)
         environment.__ShindoToolkitSession = session
     end
 
-    local rayfieldSource, downloadError = platform.httpGet(config.rayfield.url)
-    if not rayfieldSource then
-        error(
-            string.format(
-                "Rayfield Gen2 %s download failed: %s",
-                config.rayfield.version,
-                tostring(downloadError)
-            ),
-            0
-        )
-    end
-    local rayfieldChunk, compileError =
-        platform.compile(rayfieldSource, "ShindoToolkit/RayfieldGen2@" .. config.rayfield.version)
-    if not rayfieldChunk then
-        error(
-            string.format(
-                "Rayfield Gen2 %s compile failed: %s",
-                config.rayfield.version,
-                tostring(compileError)
-            ),
-            0
-        )
-    end
-    local rayfieldLoaded, rayfield = pcall(rayfieldChunk)
-    if not rayfieldLoaded then
-        error(
-            string.format("Rayfield Gen2 %s startup failed: %s", config.rayfield.version, tostring(rayfield)),
-            0
-        )
-    end
-    if type(rayfield) ~= "table" or type(rayfield.CreateWindow) ~= "function" then
-        error("Rayfield Gen2 returned an invalid runtime", 0)
-    end
+    local rayfield = validateRayfield(bundledRayfield, config.rayfield)
 
     local themeIds = {}
     for _, theme in ipairs(config.themes) do
@@ -125,6 +104,7 @@ return function(bootstrap)
         end
         table.clear(temporaryConnections)
     end
+    app.game = createGameClient(app)
 
     local function unloadWindow()
         app.disconnectTemporary()
@@ -179,7 +159,7 @@ return function(bootstrap)
 
         createKgChanger(app)
         createRcgenkai(app)
-        createMisc(app)
+        createMisc(app, miscModules)
     end
 
     local function buildSafely()

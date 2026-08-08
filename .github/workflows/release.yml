@@ -2,6 +2,11 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Confirm the exact release tag from src/config.luau (for example, v1.1.0)
+        required: true
+        type: string
 
 permissions: {}
 
@@ -32,17 +37,32 @@ jobs:
       - name: Install pinned Luau CLI
         run: scripts/install-luau-cli.sh
 
+      - name: Install pinned ShellCheck
+        run: bash scripts/install-shellcheck.sh
+
       - name: Validate, test, and build
         run: scripts/ci.sh
 
       - name: Read release version
         id: metadata
         shell: bash
+        env:
+          EXPECTED_TAG: ${{ inputs.release_tag }}
         run: |
-          .tools/luau-0.733/luau scripts/metadata.luau > "${RUNNER_TEMP}/shindo-metadata"
+          source scripts/tool-versions.sh
+          ".tools/luau-${LUAU_VERSION}/luau" scripts/metadata.luau > "${RUNNER_TEMP}/shindo-metadata"
           IFS=$'\t' read -r version _ < "${RUNNER_TEMP}/shindo-metadata"
           if [[ -z "$version" ]]; then
               printf 'Release version is empty.\n' >&2
+              exit 1
+          fi
+          if [[ ! "$EXPECTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              printf 'Release confirmation must be an exact semantic tag such as v1.1.0.\n' >&2
+              exit 1
+          fi
+          if [[ "$EXPECTED_TAG" != "v${version}" ]]; then
+              printf 'Release confirmation %s does not match config version v%s.\n' \
+                  "$EXPECTED_TAG" "$version" >&2
               exit 1
           fi
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
@@ -60,6 +80,7 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" \
               dist/shindo-toolkit.luau \
+              dist/THIRD_PARTY_NOTICES.txt \
               --generate-notes \
               --latest \
               --repo "$GITHUB_REPOSITORY" \

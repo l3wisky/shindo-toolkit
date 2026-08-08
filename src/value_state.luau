@@ -33,15 +33,20 @@ return function(app)
         return true
     end
 
-    local function missing(path, targetPath)
-        local label = targetPath or table.concat(path, ".")
-        return app.missing("target_missing", label)
+    local function captureOriginal(target, originalKey, value)
+        local original = app.originals[originalKey]
+        if type(original) ~= "table" or original.target ~= target then
+            original = {
+                target = target,
+                value = value,
+            }
+            app.originals[originalKey] = original
+        end
     end
 
-    function valueState.apply(root, path, originalKey, value, displayValue, targetPath)
-        local target = find(root, path)
+    function valueState.applyTarget(target, originalKey, value, displayValue, targetPath)
         if not target then
-            return missing(path, targetPath)
+            return app.missing("target_missing", targetPath)
         end
 
         local current, readError = read(target)
@@ -49,9 +54,7 @@ return function(app)
             app.error("value_read_failed", { reason = readError })
             return false
         end
-        if app.originals[originalKey] == nil then
-            app.originals[originalKey] = current
-        end
+        captureOriginal(target, originalKey, current)
         if not write(target, value) then
             return false
         end
@@ -59,21 +62,31 @@ return function(app)
         return true
     end
 
-    function valueState.restore(root, path, originalKey, targetPath)
-        local target = find(root, path)
+    function valueState.restoreTarget(target, originalKey, targetPath)
         if not target then
-            return missing(path, targetPath)
+            return app.missing("target_missing", targetPath)
         end
+
         local original = app.originals[originalKey]
-        if original == nil then
+        if type(original) ~= "table" or original.target ~= target then
             app.error("original_unavailable")
             return false
         end
-        if not write(target, original) then
+        if not write(target, original.value) then
             return false
         end
-        app.toast("restored", { value = original })
+        app.toast("restored", { value = original.value })
         return true
+    end
+
+    function valueState.apply(root, path, originalKey, value, displayValue, targetPath)
+        local label = targetPath or table.concat(path, ".")
+        return valueState.applyTarget(find(root, path), originalKey, value, displayValue, label)
+    end
+
+    function valueState.restore(root, path, originalKey, targetPath)
+        local label = targetPath or table.concat(path, ".")
+        return valueState.restoreTarget(find(root, path), originalKey, label)
     end
 
     valueState.find = find

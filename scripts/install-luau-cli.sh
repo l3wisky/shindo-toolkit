@@ -2,7 +2,8 @@
 set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-version="0.733"
+source "$project_root/scripts/tool-versions.sh"
+version="$LUAU_VERSION"
 destination="$project_root/.tools/luau-$version"
 
 case "$(uname -s)" in

@@ -51,20 +51,19 @@ return function(app)
     actions:CreateButton({
         name = app.ui("apply_rc"),
         callback = function()
-            app.values.apply(
-                workspace,
-                { "RCGENKAI", "item1" },
+            app.values.applyTarget(
+                app.game.getRcgenkaiItem(),
                 "rcgenkai",
                 bloodlineIds[selectedBloodline],
                 selectedBloodline,
-                "workspace.RCGENKAI.item1"
+                app.game.paths.rcgenkai
             )
         end,
     })
     actions:CreateButton({
         name = app.ui("restore_rc"),
         callback = function()
-            app.values.restore(workspace, { "RCGENKAI", "item1" }, "rcgenkai", "workspace.RCGENKAI.item1")
+            app.values.restoreTarget(app.game.getRcgenkaiItem(), "rcgenkai", app.game.paths.rcgenkai)
         end,
     })
 end

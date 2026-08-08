@@ -24,30 +24,6 @@ return function(development)
         return _G
     end
 
-    function platform.httpGet(url)
-        local succeeded, result = pcall(function()
-            return game:HttpGet(url)
-        end)
-        if not succeeded then
-            return nil, tostring(result)
-        end
-        if type(result) ~= "string" or result == "" then
-            return nil, "the response was empty"
-        end
-        return result, nil
-    end
-
-    function platform.compile(source, chunkName)
-        if type(loadstring) ~= "function" then
-            return nil, "loadstring is unavailable"
-        end
-        local chunk, compileError = loadstring(source, chunkName)
-        if not chunk then
-            return nil, tostring(compileError)
-        end
-        return chunk, nil
-    end
-
     function platform.fileExists(path)
         if type(isfile) ~= "function" then
             return false

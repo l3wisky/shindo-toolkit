@@ -4,28 +4,47 @@ set -euo pipefail
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
-luau_bin="$project_root/.tools/luau-0.733"
+source scripts/tool-versions.sh
+luau_bin="$project_root/.tools/luau-$LUAU_VERSION"
+shellcheck_bin="$project_root/.tools/shellcheck-$SHELLCHECK_VERSION"
+rokit_bin="$HOME/.rokit/bin"
 if [[ -d "$luau_bin" ]]; then
     export PATH="$luau_bin:$PATH"
 fi
+if [[ -d "$shellcheck_bin" ]]; then
+    export PATH="$shellcheck_bin:$PATH"
+fi
+if [[ -d "$rokit_bin" ]]; then
+    export PATH="$rokit_bin:$PATH"
+fi
 
-for executable in stylua selene darklua luau luau-analyze luau-compile; do
+for executable in stylua selene darklua luau luau-analyze luau-compile shellcheck; do
     if ! command -v "$executable" > /dev/null 2>&1; then
         printf 'Missing required tool %s; run scripts/setup.sh first.\n' "$executable" >&2
         exit 1
     fi
 done
 
-stylua --check .
-selene loader.luau loader.dev.luau src build scripts tests
-luau-analyze loader.luau loader.dev.luau src/*.luau build/*.luau scripts/*.luau tests/*.luau
-luau tests/unit.luau
+mapfile -d '' luau_files < <(
+    find loader.luau loader.dev.luau src build scripts tests -type f -name '*.luau' -print0 \
+        | LC_ALL=C sort -z
+)
+mapfile -d '' analyzable_luau_files < <(
+    find loader.luau loader.dev.luau src build scripts tests \
+        -type f -name '*.luau' ! -path 'build/entry.luau' -print0 \
+        | LC_ALL=C sort -z
+)
 
-find loader.luau loader.dev.luau src build scripts tests -type f -name '*.luau' -print0 \
-    | LC_ALL=C sort -z \
-    | while IFS= read -r -d '' file; do
-        luau-compile "$file" > /dev/null
-    done
+stylua --check .
+selene "${luau_files[@]}"
+luau-analyze "${analyzable_luau_files[@]}"
+luau tests/run.luau
+bash -n scripts/*.sh
+shellcheck scripts/*.sh
+
+for file in "${luau_files[@]}"; do
+    luau-compile "$file" > /dev/null
+done
 
 scripts/build.sh
 luau-compile dist/shindo-toolkit.luau > /dev/null

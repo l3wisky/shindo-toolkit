@@ -7,11 +7,12 @@ Rayfield Gen2 is developed by Sirius Software / Corridon Capital:
 https://github.com/SiriusSoftwareLtd/rayfield-gen2
 Version: 1.1.0
 Commit: 84e39394069be81b0e4ad60d70821f45e061f2e1
-Immutable runtime artifact:
+Vendored runtime artifact:
 https://github.com/SiriusSoftwareLtd/rayfield-gen2/releases/download/1.1.0/bundled.luau
 SHA-256: e3c337e969e6c4c0de91a77156201094568be55fdfe2669368c48c1d8169d0a6
-The artifact is the official single-file Luau bundle produced by the upstream
-release workflow and published as a versioned GitHub release asset.
+The unmodified artifact is the official single-file Luau bundle produced by
+the upstream release workflow. Shindo Toolkit vendors this source-form snapshot
+and includes it in stable bundles to avoid a second runtime network dependency.
 Rayfield Gen2 is licensed under the Mozilla Public License 2.0 (MPL-2.0).
 Upstream copyright: Copyright (c) 2026 Corridon Capital.
 License reference: https://www.mozilla.org/MPL/2.0/
