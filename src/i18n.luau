@@ -199,7 +199,7 @@ local function translate(language: string, key: string, values: Replacements?): 
 end
 
 local function rayfieldTranslations(): { [string]: { [string]: string } }
-    local translations: { [string]: { [string]: string } = { ru = {} }
+    local translations: { [string]: { [string]: string } } = { ru = {} }
     for key, source in pairs(locales.en) do
         translations.ru[source] = locales.ru[key]
     end
