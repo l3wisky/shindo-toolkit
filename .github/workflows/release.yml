@@ -63,6 +63,7 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" \
               dist/shindo-toolkit.luau \
+              dist/THIRD_PARTY_NOTICES.txt \
               --generate-notes \
               --latest \
               --repo "$GITHUB_REPOSITORY" \
