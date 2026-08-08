@@ -1,4 +1,16 @@
-return {
+--!strict
+
+export type NamedId = {
+    id: string,
+    name: string,
+}
+
+export type Data = {
+    bloodlines: { NamedId },
+    kenjutsu: { NamedId },
+}
+
+local data: Data = {
     bloodlines = {
         { id = "narumakiruby", name = "Narumaki Ruby" },
         { id = "sharingan", name = "Akuma" },
@@ -187,3 +199,5 @@ return {
         { id = "windbreathing", name = "Wind Ken Style" },
     },
 }
+
+return data
