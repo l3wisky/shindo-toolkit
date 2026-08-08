@@ -24,10 +24,15 @@ mapfile -d '' luau_files < <(
     find loader.luau loader.dev.luau src build scripts tests -type f -name '*.luau' -print0 \
         | LC_ALL=C sort -z
 )
+mapfile -d '' analyzable_luau_files < <(
+    find loader.luau loader.dev.luau src build scripts tests \
+        -type f -name '*.luau' ! -path 'build/entry.luau' -print0 \
+        | LC_ALL=C sort -z
+)
 
 stylua --check .
 selene "${luau_files[@]}"
-luau-analyze "${luau_files[@]}"
+luau-analyze "${analyzable_luau_files[@]}"
 luau tests/run.luau
 bash -n scripts/*.sh
 shellcheck scripts/*.sh
