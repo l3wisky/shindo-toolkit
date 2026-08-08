@@ -1,4 +1,9 @@
-local locales = {
+--!strict
+
+export type Locale = { [string]: string }
+export type Replacements = { [string]: any }
+
+local locales: { [string]: Locale } = {
     en = {
         tab_kg = "KG Changer",
         tab_rc = "RCGenkai",
@@ -181,7 +186,7 @@ local locales = {
     },
 }
 
-local function translate(language, key, values)
+local function translate(language: string, key: string, values: Replacements?): string
     local locale = locales[language] or locales.en
     local result = assert(locale[key] or locales.en[key], "missing translation: " .. tostring(key))
     if values then
@@ -193,8 +198,8 @@ local function translate(language, key, values)
     return result
 end
 
-local function rayfieldTranslations()
-    local translations = { ru = {} }
+local function rayfieldTranslations(): { [string]: { [string]: string } }
+    local translations: { [string]: { [string]: string } = { ru = {} }
     for key, source in pairs(locales.en) do
         translations.ru[source] = locales.ru[key]
     end
