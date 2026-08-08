@@ -1,4 +1,22 @@
-return function(platform, config)
+--!strict
+
+type Chunk = () -> any
+
+type Platform = {
+    httpGet: (string) -> (string?, string?),
+    compile: (string, string) -> (Chunk?, string?),
+}
+
+type Config = {
+    version: string,
+    url: string,
+}
+
+export type RayfieldRuntime = {
+    CreateWindow: (RayfieldRuntime, { [string]: any }) -> any,
+}
+
+return function(platform: Platform, config: Config): RayfieldRuntime
     local source, downloadError = platform.httpGet(config.url)
     if not source then
         error(
@@ -20,5 +38,5 @@ return function(platform, config)
         error("Rayfield Gen2 returned an invalid runtime", 0)
     end
 
-    return rayfield
+    return rayfield :: RayfieldRuntime
 end
