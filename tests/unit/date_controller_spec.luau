@@ -70,12 +70,13 @@ return function(check)
 
     check(controller.rollback(), "rollback should succeed after server confirmation")
     check(band.Value == "rollback", "rollback should apply the configured band")
-    check(app.originals.date == "original", "rollback should capture the original date")
+    check(app.originals.date.target == band, "rollback should associate the original date with its band")
+    check(app.originals.date.value == "original", "rollback should capture the original date")
     check(messages[#messages] == "toast:rollback_applied", "rollback should notify the user")
 
     band.Value = "later"
     check(controller.rollback(), "repeated rollback should still succeed")
-    check(app.originals.date == "original", "repeated rollback must preserve the first original")
+    check(app.originals.date.value == "original", "repeated rollback must preserve the first original")
 
     check(controller.restore(), "restore should succeed when an original exists")
     check(band.Value == "original", "restore should apply the captured original")
@@ -83,6 +84,22 @@ return function(check)
 
     check(controller.rollbackAndRejoin(), "rollback-and-rejoin should compose both operations")
     check(rejoinCalls == 1, "rollback-and-rejoin should rejoin exactly once")
+
+    local previousBand = band
+    band = {
+        Value = "respawned-original",
+    }
+    check(not controller.restore(), "restore must reject an original from a replaced date band")
+    check(band.Value == "respawned-original", "stale date restore must not mutate the replacement band")
+    check(controller.rollback(), "rollback should capture the replacement date band")
+    check(app.originals.date.target == band, "replacement date capture should update target identity")
+    check(
+        app.originals.date.value == "respawned-original",
+        "replacement date capture should store its baseline"
+    )
+    check(controller.restore(), "replacement date restore should succeed")
+    check(band.Value == "respawned-original", "replacement date restore should use its own baseline")
+    band = previousBand
 
     local nestedResult = nil
     check(

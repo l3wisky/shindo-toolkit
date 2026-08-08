@@ -24,12 +24,16 @@ return function(app, dependencies)
             app.missing("target_missing", client.paths.dateBand)
             return nil
         end
-        if app.originals.date == nil then
-            local original, readSuccessfully = readValue(band)
+        local original = app.originals.date
+        if type(original) ~= "table" or original.target ~= band then
+            local originalValue, readSuccessfully = readValue(band)
             if not readSuccessfully then
                 return nil
             end
-            app.originals.date = original
+            app.originals.date = {
+                target = band,
+                value = originalValue,
+            }
         end
         return band
     end
@@ -96,15 +100,16 @@ return function(app, dependencies)
 
     function controller.restore()
         return controller.run(function()
-            if app.originals.date == nil then
-                app.error("original_unavailable")
-                return false
-            end
             local band = client.getDateBand()
             if not band then
                 return app.missing("target_missing", client.paths.dateBand)
             end
-            return applyDate(band, app.originals.date, "original_date_restored")
+            local original = app.originals.date
+            if type(original) ~= "table" or original.target ~= band then
+                app.error("original_unavailable")
+                return false
+            end
+            return applyDate(band, original.value, "original_date_restored")
         end)
     end
 
