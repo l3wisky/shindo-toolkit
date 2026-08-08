@@ -26,7 +26,8 @@ return function(check)
                 return {
                     CreateWindow = function() end,
                 }
-            end, nil
+            end,
+                nil
         end,
     }
 
