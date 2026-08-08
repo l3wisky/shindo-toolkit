@@ -29,7 +29,10 @@ return function(check)
         local englishPlaceholders = placeholders(englishSource)
         local russianPlaceholders = placeholders(i18n.locales.ru[key])
         for name in pairs(englishPlaceholders) do
-            check(russianPlaceholders[name], string.format("Russian locale key %s is missing {%s}", key, name))
+            check(
+                russianPlaceholders[name],
+                string.format("Russian locale key %s is missing {%s}", key, name)
+            )
         end
         for name in pairs(russianPlaceholders) do
             check(
