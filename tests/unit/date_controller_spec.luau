@@ -97,12 +97,9 @@ return function(check)
     check(nestedResult == false, "concurrent date operations should be rejected")
     check(messages[#messages] == "error:operation_busy", "busy operations should explain the rejection")
 
-    check(
-        not controller.run(function()
-            error("operation exploded")
-        end),
-        "operation exceptions should fail safely"
-    )
+    check(not controller.run(function()
+        error("operation exploded")
+    end), "operation exceptions should fail safely")
     check(not controller.isBusy(), "date mutex must be released after an exception")
     check(
         controller.run(function()
