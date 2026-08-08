@@ -17,7 +17,8 @@ return function(bootstrap)
     local createPlatform = bootstrap.load("src/platform.luau")
     local configureStorage = bootstrap.load("src/storage.luau")
     local createValueState = bootstrap.load("src/value_state.luau")
-    local createRayfield = bootstrap.load("src/runtime/rayfield.luau")
+    local validateRayfield = bootstrap.load("src/runtime/rayfield.luau")
+    local bundledRayfield = bootstrap.load("vendor/rayfield-gen2/bundled.luau")
     local createGameClient = bootstrap.load("src/game/client.luau")
     local createKgChanger = bootstrap.load("src/features/kg_changer.luau")
     local createRcgenkai = bootstrap.load("src/features/rcgenkai.luau")
@@ -43,7 +44,7 @@ return function(bootstrap)
         environment.__ShindoToolkitSession = session
     end
 
-    local rayfield = createRayfield(platform, config.rayfield)
+    local rayfield = validateRayfield(bundledRayfield, config.rayfield)
 
     local themeIds = {}
     for _, theme in ipairs(config.themes) do
