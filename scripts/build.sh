@@ -22,6 +22,8 @@ if [[ -z "$version" || -z "$rayfield_version" ]]; then
     printf 'Release metadata is incomplete.\n' >&2
     exit 1
 fi
+release_ref="v${version}"
+release_source="https://github.com/l3wisky/shindo-toolkit/tree/${release_ref}"
 
 {
     printf '%s\n' "-- Shindo Toolkit v${version}"
@@ -31,8 +33,8 @@ fi
     printf '%s\n' "-- Bundled dependency: Rayfield Gen2 ${rayfield_version} source under MPL-2.0:"
     printf '%s\n' "-- https://www.mozilla.org/MPL/2.0/"
     printf '%s\n' "-- Vendored source and notices:"
-    printf '%s\n' "-- https://github.com/l3wisky/shindo-toolkit/tree/main/vendor/rayfield-gen2"
-    printf '%s\n\n' "-- Source: https://github.com/l3wisky/shindo-toolkit"
+    printf '%s\n' "-- ${release_source}/vendor/rayfield-gen2"
+    printf '%s\n\n' "-- Source: ${release_source}"
     cat "$bundle_temp"
 } > "$artifact_temp"
 

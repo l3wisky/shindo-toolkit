@@ -4,13 +4,18 @@ set -euo pipefail
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
-luau_bin="$project_root/.tools/luau-0.733"
-shellcheck_bin="$project_root/.tools/shellcheck-0.11.0"
+source scripts/tool-versions.sh
+luau_bin="$project_root/.tools/luau-$LUAU_VERSION"
+shellcheck_bin="$project_root/.tools/shellcheck-$SHELLCHECK_VERSION"
+rokit_bin="$HOME/.rokit/bin"
 if [[ -d "$luau_bin" ]]; then
     export PATH="$luau_bin:$PATH"
 fi
 if [[ -d "$shellcheck_bin" ]]; then
     export PATH="$shellcheck_bin:$PATH"
+fi
+if [[ -d "$rokit_bin" ]]; then
+    export PATH="$rokit_bin:$PATH"
 fi
 
 for executable in stylua selene darklua luau luau-analyze luau-compile shellcheck; do
