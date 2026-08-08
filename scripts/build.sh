@@ -13,12 +13,15 @@ cleanup() {
 trap cleanup EXIT
 
 darklua process build/entry.luau "$bundle_temp"
-IFS=$'\t' read -r version _ < <(luau scripts/metadata.luau)
+IFS=$'\t' read -r version rayfield_version _ < <(luau scripts/metadata.luau)
 
 {
     printf '%s\n' "-- Shindo Toolkit v${version}"
     printf '%s\n' "-- Required Notice: Copyright 2026 l3wisky."
-    printf '%s\n' "-- Licensed under PolyForm Noncommercial 1.0.0: https://polyformproject.org/licenses/noncommercial/1.0.0"
+    printf '%s\n' "-- Shindo Toolkit is licensed under PolyForm Noncommercial 1.0.0:"
+    printf '%s\n' "-- https://polyformproject.org/licenses/noncommercial/1.0.0"
+    printf '%s\n' "-- Includes unmodified Rayfield Gen2 ${rayfield_version} under MPL-2.0."
+    printf '%s\n' "-- Dependency source and notices: https://github.com/l3wisky/shindo-toolkit"
     printf '%s\n\n' "-- Source: https://github.com/l3wisky/shindo-toolkit"
     cat "$bundle_temp"
 } > "$artifact_temp"
