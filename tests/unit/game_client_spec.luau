@@ -9,8 +9,8 @@ local function signal()
         local connection = {
             Connected = true,
         }
-        function connection:Disconnect()
-            self.Connected = false
+        function connection.Disconnect()
+            connection.Connected = false
         end
         table.insert(listeners, {
             connection = connection,
