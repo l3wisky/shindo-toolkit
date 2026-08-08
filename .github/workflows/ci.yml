@@ -45,7 +45,7 @@ jobs:
           git fetch origin "$GITHUB_HEAD_REF"
           git switch -C "$GITHUB_HEAD_REF" "origin/$GITHUB_HEAD_REF"
           bash scripts/vendor-rayfield.sh
-          if git diff --quiet -- vendor/rayfield-gen2/bundled.luau; then
+          if [[ -z "$(git status --porcelain -- vendor/rayfield-gen2/bundled.luau)" ]]; then
               exit 0
           fi
           git config user.name github-actions[bot]
