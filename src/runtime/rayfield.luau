@@ -9,10 +9,7 @@ return function(platform, config)
 
     local chunk, compileError = platform.compile(source, "ShindoToolkit/RayfieldGen2@" .. config.version)
     if not chunk then
-        error(
-            string.format("Rayfield Gen2 %s compile failed: %s", config.version, tostring(compileError)),
-            0
-        )
+        error(string.format("Rayfield Gen2 %s compile failed: %s", config.version, tostring(compileError)), 0)
     end
 
     local started, rayfield = pcall(chunk)
